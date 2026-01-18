@@ -1,0 +1,30 @@
+name: Create Main Branch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Create and push main branch
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create main branch from the WSL-spec-draft commit
+          git branch main 70f0824d741798a0dfb08f6b946acace95031a2b || echo "Main branch may already exist"
+          
+          # Push the main branch
+          git push origin main
+          
+          echo "Main branch created and pushed successfully!"
