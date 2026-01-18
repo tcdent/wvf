@@ -1,0 +1,49 @@
+Power
+  .nature
+    - corrupts | unchecked !
+    - reveals character => self-knowledge
+    - concentration^ => abuse^ @historical-pattern
+  .institutional
+    - self-preserving
+    - accountability <> trust &Trust.institutional
+    - diffusion => dilution-of-responsibility
+
+Trust
+  .formation
+    - slow
+    - requires consistency | over time
+    - contextual @personal-experience
+  .erosion
+    - fast !
+    - single violation => collapse?
+    - asymmetric vs formation &Trust.formation
+  .institutional
+    - possible | high transparency
+    - unlikely | low transparency
+    - rational to withhold | unverifiable @game-theory
+
+Human-nature
+  .social
+    - conformist | formal groups
+    - authentic | solitary
+    - status-aware @evolutionary-psychology
+    - coalition-forming
+  .cognition
+    - pattern-seeking
+    - confirmation-biased @cognitive-science
+    - narrative-constructing
+    - rationalizes post-hoc [<= rational actor]
+  .self-perception
+    - overconfident | familiar domains
+    - miscalibrated @Dunning-Kruger
+    - self-deception => comfort &Human-nature.cognition
+
+Institutions
+  .function
+    - stabilize !
+    - preserve knowledge
+    - coordinate action @game-theory
+  .dysfunction
+    - ossify | over time
+    - self-perpetuate // original purpose
+    - capture-by-interests^ @public-choice-theory
