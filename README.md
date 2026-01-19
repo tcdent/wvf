@@ -157,22 +157,26 @@ python -m evals list-cases
 ## Project Structure
 
 ```
-worldview/
-├── agent/                 # Rust agent CLI
-│   └── src/main.rs        # Agent implementation with embedded spec
-├── validator/             # Rust validator
-│   ├── src/lib.rs         # Validation library
-│   └── src/main.rs        # CLI tool
-├── evals/                 # Python evaluation framework
-│   ├── cli.py             # Evaluation CLI
-│   ├── runner.py          # Test orchestration
-│   ├── evaluator.py       # Response scoring
-│   ├── test_cases.py      # Test case definitions
-│   ├── worldview_prompt.py # System prompts
-│   └── llm_clients.py     # LLM provider clients
-├── SPEC.md                # Full format specification
-├── system.md              # Condensed system prompt
-└── example.wvf            # Example document
+wvf/
+├── spec/                    # Canonical specification
+│   ├── tokens.yaml          # Token definitions (source of truth)
+│   ├── grammar.pest         # PEG grammar
+│   └── generate.py          # Generates docs and code from tokens.yaml
+├── validator/               # Rust validator
+│   ├── src/lib.rs           # Validation library
+│   ├── src/main.rs          # CLI tool
+│   └── build.rs             # Generates tokens from spec at compile time
+├── agent/                   # Rust agent CLI
+│   └── src/main.rs          # LLM-powered notation converter
+├── evals/                   # Python evaluation framework
+│   ├── cli.py               # Evaluation CLI
+│   ├── runner.py            # Test orchestration
+│   ├── evaluator.py         # Response scoring
+│   ├── test_cases.py        # Test case definitions
+│   └── llm_clients.py       # LLM provider clients
+├── SPEC.md                  # Full format specification
+├── system.md                # Condensed system prompt (generated)
+└── example.wvf              # Example document
 ```
 
 ## Building
