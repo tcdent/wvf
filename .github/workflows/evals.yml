@@ -12,6 +12,19 @@ on:
         description: 'Difficulty level (baseline, moderate, extreme, or all)'
         required: false
         default: 'all'
+      eval_type:
+        description: 'Evaluation type'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+          - read
+          - write
+          - both
+      write_complexity:
+        description: 'Write eval complexity (simple, moderate, complex, or all)'
+        required: false
+        default: 'all'
 
   # Run after build workflow completes on PR
   workflow_run:
@@ -20,10 +33,12 @@ on:
     branches: [main, master]
 
 jobs:
-  evaluate:
+  evaluate-read:
     runs-on: ubuntu-latest
-    # Only run if build succeeded (or if manually triggered)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # Only run if build succeeded (or if manually triggered) and eval_type includes read
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.eval_type != 'write') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
     steps:
       - name: Checkout repository
@@ -152,4 +167,113 @@ jobs:
               baseline_rate = info['summary']['baseline_rate']
               if baseline_rate < 0.8:
                   print(f'WARNING: {model} baseline rate {baseline_rate:.1%} is below 80%')
+          "
+
+  evaluate-write:
+    runs-on: ubuntu-latest
+    # Only run if build succeeded and eval_type includes write (requires CLI tools)
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.eval_type != 'read') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'evals/requirements.txt'
+
+      - name: Install dependencies
+        run: |
+          pip install -r evals/requirements.txt
+
+      - name: Download Worldview tools from build
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: worldview-tools
+          path: ./bin
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Worldview tools (manual trigger)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: build.yml
+          name: worldview-tools
+          path: ./bin
+        continue-on-error: true
+
+      - name: Check CLI availability
+        id: cli-check
+        run: |
+          if [ -d "./bin" ] && [ -f "./bin/worldview" ]; then
+            chmod +x ./bin/*
+            echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "::warning::Worldview CLI not available, skipping write evaluations"
+          fi
+
+      - name: Run write evaluations
+        if: steps.cli-check.outputs.available == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p results
+
+          # Build command
+          CMD="python -m evals write-eval --verbose --output results --agent-cli ./bin/worldview"
+
+          # Add models (write eval only supports Claude models)
+          CMD="$CMD --all-models"
+
+          # Add complexity filter if not 'all'
+          COMPLEXITY="${{ github.event.inputs.write_complexity || 'all' }}"
+          if [ "$COMPLEXITY" != "all" ]; then
+            CMD="$CMD --complexity $COMPLEXITY"
+          fi
+
+          echo "Running: $CMD"
+          $CMD
+
+      - name: Upload write results
+        if: steps.cli-check.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: write-eval-results-${{ github.run_number }}
+          path: results/
+          retention-days: 30
+
+      - name: Post write summary
+        if: steps.cli-check.outputs.available == 'true'
+        run: |
+          echo "## Write Evaluation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat results/write_report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Check write eval results
+        if: steps.cli-check.outputs.available == 'true'
+        run: |
+          python -c "
+          import json
+          with open('results/write_results.json') as f:
+              data = json.load(f)
+
+          for model, info in data['models'].items():
+              success_rate = info['summary']['success_rate']
+              simple_rate = info['summary']['simple_rate']
+              print(f'{model}: {success_rate:.1%} overall, {simple_rate:.1%} simple')
+
+              # Simple cases should have high success rate
+              if simple_rate < 0.6:
+                  print(f'WARNING: {model} simple case rate {simple_rate:.1%} is below 60%')
           "
