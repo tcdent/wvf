@@ -256,6 +256,7 @@ fn handle_tool_call(file_path: &PathBuf, tool_name: &str, params: &serde_json::V
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    let start_time = std::time::Instant::now();
 
     // Check for API key
     if std::env::var("ANTHROPIC_API_KEY").is_err() {
@@ -271,9 +272,10 @@ async fn main() -> Result<()> {
     };
 
     if cli.verbose {
-        eprintln!("Worldview file: {:?}", file_path);
-        eprintln!("Model: {}", cli.model);
-        eprintln!("Fact: {}", cli.fact);
+        eprintln!("[config] Worldview file: {:?}", file_path);
+        eprintln!("[config] Model: {}", cli.model);
+        eprintln!("[config] Fact: {}", cli.fact);
+        eprintln!("[start] Beginning agent execution...");
     }
 
     // Create tool registry with our custom tools
@@ -309,6 +311,9 @@ async fn main() -> Result<()> {
     agent.send_request(&user_message, RequestMode::Normal);
 
     // Process the agent loop
+    let mut tool_call_count = 0;
+    let mut thinking_started = false;
+
     while let Some(step) = agent.next().await {
         match step {
             AgentStep::TextDelta(text) => {
@@ -316,22 +321,48 @@ async fn main() -> Result<()> {
             }
             AgentStep::ThinkingDelta(thinking) => {
                 if cli.verbose {
-                    eprint!("[thinking] {}", thinking);
+                    if !thinking_started {
+                        thinking_started = true;
+                        eprint!("\n[thinking] ");
+                    }
+                    eprint!("{}", thinking);
                 }
             }
             AgentStep::CompactionDelta(_) => {
                 // Not used in our simple case
             }
             AgentStep::ToolRequest(tool_calls) => {
+                if cli.verbose && thinking_started {
+                    eprintln!();  // End thinking block
+                    thinking_started = false;
+                }
+
                 for call in tool_calls {
+                    tool_call_count += 1;
+                    let tool_start = std::time::Instant::now();
+
                     if cli.verbose {
-                        eprintln!("\n[tool] {} with {:?}", call.name, call.params);
+                        // Format params nicely for readability
+                        let params_str = if call.params.is_object() {
+                            serde_json::to_string_pretty(&call.params).unwrap_or_else(|_| format!("{:?}", call.params))
+                        } else {
+                            format!("{:?}", call.params)
+                        };
+                        eprintln!("\n[tool:{}] {}", tool_call_count, call.name);
+                        eprintln!("[params] {}", params_str);
                     }
 
                     let result = handle_tool_call(&file_path, &call.name, &call.params);
 
                     if cli.verbose {
-                        eprintln!("[result] {}", result);
+                        let tool_elapsed = tool_start.elapsed();
+                        // Truncate long results for readability
+                        let result_preview = if result.len() > 500 {
+                            format!("{}... ({} chars total)", &result[..500], result.len())
+                        } else {
+                            result.clone()
+                        };
+                        eprintln!("[result:{}ms] {}", tool_elapsed.as_millis(), result_preview);
                     }
 
                     agent.submit_tool_result(&call.call_id, result);
@@ -343,12 +374,20 @@ async fn main() -> Result<()> {
                 }
             }
             AgentStep::Finished { usage } => {
+                let total_elapsed = start_time.elapsed();
                 if cli.verbose {
-                    eprintln!("\n[done] {}", usage.format_log());
+                    eprintln!("\n[done] Input: {}, Output: {}, Thinking: {}",
+                        usage.input_tokens, usage.output_tokens, usage.thinking_tokens.unwrap_or(0));
+                    eprintln!("[timing] Total: {}ms, Tool calls: {}",
+                        total_elapsed.as_millis(), tool_call_count);
                 }
                 break;
             }
             AgentStep::Error(e) => {
+                let total_elapsed = start_time.elapsed();
+                if cli.verbose {
+                    eprintln!("[error:{}ms] {}", total_elapsed.as_millis(), e);
+                }
                 eprintln!("\nError: {}", e);
                 std::process::exit(1);
             }
