@@ -322,6 +322,8 @@ def generate_report(
 
     lines.extend([
         "",
+        "---",
+        "",
         "## Detailed Results",
         "",
     ])
@@ -342,10 +344,23 @@ def generate_report(
         lines.extend([
             f"### {tc.name}",
             "",
-            f"**Difficulty:** {tc.difficulty.value}  ",
-            f"**Category:** {tc.category.value}",
+            f"**Difficulty:** `{tc.difficulty.value}` | **Category:** `{tc.category.value}`",
             "",
-            f"**Question:** {tc.question}",
+            "#### 1. Fact Statement (input to WSL CLI)",
+            "",
+            f"> {tc.fact_statement}",
+            "",
+            "#### 2. WSL Content (worldview encoding)",
+            "",
+            "```wsl",
+            tc.wsl_content.strip(),
+            "```",
+            "",
+            "#### 3. Question Asked",
+            "",
+            f"> **{tc.question}**",
+            "",
+            "#### 4. Results by Model",
             "",
             "| Model | Aligned | Key Terms | Forbidden | Score |",
             "|-------|---------|-----------|-----------|-------|",
@@ -363,7 +378,34 @@ def generate_report(
                     f"{result.score.overall_score:.2f} |"
                 )
 
-        lines.append("")
+        # Add response previews for each model
+        lines.extend([
+            "",
+            "<details>",
+            "<summary>Model Responses (click to expand)</summary>",
+            "",
+        ])
+
+        for model_name, result in model_results.items():
+            lines.append(f"**{model_name}:**")
+            if result.error:
+                lines.append(f"```\nERROR: {result.error}\n```")
+            elif result.response:
+                # Truncate long responses
+                response_preview = result.response[:500]
+                if len(result.response) > 500:
+                    response_preview += "..."
+                lines.append(f"```\n{response_preview}\n```")
+            else:
+                lines.append("```\n(no response)\n```")
+            lines.append("")
+
+        lines.extend([
+            "</details>",
+            "",
+            "---",
+            "",
+        ])
 
     report = "\n".join(lines)
 
