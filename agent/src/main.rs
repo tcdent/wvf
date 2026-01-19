@@ -376,8 +376,8 @@ async fn main() -> Result<()> {
             AgentStep::Finished { usage } => {
                 let total_elapsed = start_time.elapsed();
                 if cli.verbose {
-                    eprintln!("\n[done] Input: {}, Output: {}, Thinking: {}",
-                        usage.input_tokens, usage.output_tokens, usage.thinking_tokens.unwrap_or(0));
+                    eprintln!("\n[done] Output: {}, Context: {}",
+                        usage.output_tokens, usage.context_tokens);
                     eprintln!("[timing] Total: {}ms, Tool calls: {}",
                         total_elapsed.as_millis(), tool_call_count);
                 }

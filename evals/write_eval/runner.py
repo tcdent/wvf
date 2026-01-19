@@ -254,17 +254,14 @@ class WriteEvalRunner:
             elif line.startswith("[done]"):
                 done_content = line[len("[done]"):].strip()
 
-                # Parse token counts: "Input: X, Output: Y, Thinking: Z"
-                input_match = re.search(r"Input:\s*(\d+)", done_content)
+                # Parse token counts: "Output: X, Context: Y"
                 output_match = re.search(r"Output:\s*(\d+)", done_content)
-                thinking_match = re.search(r"Thinking:\s*(\d+)", done_content)
+                context_match = re.search(r"Context:\s*(\d+)", done_content)
 
-                if input_match:
-                    metrics.input_tokens = int(input_match.group(1))
                 if output_match:
                     metrics.output_tokens = int(output_match.group(1))
-                if thinking_match:
-                    metrics.thinking_tokens = int(thinking_match.group(1))
+                if context_match:
+                    metrics.input_tokens = int(context_match.group(1))  # Context = input tokens
 
             # Timing information
             elif line.startswith("[timing]"):
