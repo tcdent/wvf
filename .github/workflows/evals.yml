@@ -33,9 +33,9 @@ on:
       - '.github/workflows/evals.yml'
 
 jobs:
-  # Build binaries first (only if use_cli is true or for full runs)
+  # Build binaries first (for CLI testing, scheduled runs, and PR validation)
   build:
-    if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' }}
+    if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' || github.event_name == 'pull_request' }}
     uses: ./.github/workflows/build.yml
 
   evaluate:
@@ -59,14 +59,14 @@ jobs:
           pip install -r evals/requirements.txt
 
       - name: Download Worldview tools
-        if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' }}
+        if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         uses: actions/download-artifact@v4
         with:
           name: worldview-tools
           path: ./bin
 
       - name: Make tools executable
-        if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' }}
+        if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         run: |
           chmod +x ./bin/*
           echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
@@ -108,8 +108,8 @@ jobs:
             CMD="$CMD --difficulty $DIFFICULTY"
           fi
 
-          # Add CLI flag if requested
-          if [ "${{ github.event.inputs.use_cli }}" == "true" ]; then
+          # Add CLI flag for schedule, PR, or when explicitly requested
+          if [ "${{ github.event.inputs.use_cli }}" == "true" ] || [ "${{ github.event_name }}" == "schedule" ] || [ "${{ github.event_name }}" == "pull_request" ]; then
             CMD="$CMD --use-cli --worldview-cli ./bin/worldview"
           fi
 
