@@ -1,0 +1,127 @@
+# Worldview Format Token Definitions
+#
+# This is the canonical source for all operators, modifiers, and syntax elements.
+# Generated files (docs, validator constants, system prompts) derive from this.
+
+version: "0.1"
+
+# Document structure
+structure:
+  concept:
+    indent: 0
+    prefix: null
+    description: "A subject of belief—a noun in the worldview"
+    examples: ["Power", "Trust", "Human-nature"]
+
+  facet:
+    indent: 2
+    prefix: "."
+    description: "An aspect or dimension of a concept"
+    examples: [".nature", ".formation", ".erosion"]
+
+  claim:
+    indent: 4
+    prefix: "-"
+    description: "An assertion about a facet—what is believed to be true"
+    examples: ["- corrupts | unchecked", "- slow"]
+
+# Inline elements (positional grammar)
+inline_elements:
+  - symbol: "|"
+    name: "condition"
+    meaning: "when/if applies"
+    position: "after claim"
+    example: "- corrupts | unchecked"
+
+  - symbol: "@"
+    name: "source"
+    meaning: "basis for belief"
+    position: "after claim/conditions"
+    example: "@historical-pattern"
+
+  - symbol: "&"
+    name: "reference"
+    meaning: "links to other concept.facet"
+    position: "after claim"
+    format: "&Concept.facet"
+    example: "&Trust.formation"
+
+# Brief forms - compact relationship operators
+brief_forms:
+  - symbol: "=>"
+    meaning: "causes, leads to"
+    example: "power => corruption"
+
+  - symbol: "<="
+    meaning: "caused by, results from"
+    example: "trust <= consistency"
+
+  - symbol: "<>"
+    meaning: "mutual, bidirectional"
+    example: "accountability <> trust"
+
+  - symbol: "><"
+    meaning: "tension, conflicts with"
+    example: "efficiency >< thoroughness"
+
+  - symbol: "~"
+    meaning: "similar to, resembles"
+    example: "authority ~ influence"
+
+  - symbol: "="
+    meaning: "equivalent to, means"
+    example: "formal = official"
+
+  - symbol: "vs"
+    meaning: "in contrast to"
+    example: "asymmetric vs formation"
+
+  - symbol: "//"
+    meaning: "regardless of"
+    example: "self-perpetuate // original purpose"
+
+# Modifiers - suffix markers that inflect meaning
+modifiers:
+  - symbol: "^"
+    meaning: "increasing, trending up"
+    example: "concentration^"
+
+  - symbol: "v"
+    meaning: "decreasing, trending down"
+    example: "trust v"
+
+  - symbol: "!"
+    meaning: "strong, emphatic, high confidence"
+    example: "fast !"
+
+  - symbol: "?"
+    meaning: "uncertain, contested, tentative"
+    example: "free-will?"
+
+  - symbol: "*"
+    meaning: "notable, important, flagged"
+    example: "paradigm-shift*"
+
+# Evolution markers
+evolution:
+  supersession:
+    syntax: "[<= prior belief]"
+    meaning: "current belief supersedes prior belief"
+    example: "- adaptive [<= inherently good]"
+
+# Positional grammar order
+claim_order:
+  - element: "claim_text"
+    required: true
+  - element: "conditions"
+    required: false
+    prefix: "|"
+    multiple: true
+  - element: "sources"
+    required: false
+    prefix: "@"
+    multiple: true
+  - element: "references"
+    required: false
+    prefix: "&"
+    multiple: true

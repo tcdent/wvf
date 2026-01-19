@@ -1,0 +1,141 @@
+// Worldview Format Grammar
+// PEG specification for .wvf files
+//
+// This is the canonical grammar definition for the Worldview format.
+// It can be used with pest (Rust) or as reference documentation.
+
+// =============================================================================
+// DOCUMENT STRUCTURE
+// =============================================================================
+
+/// A complete Worldview document: one or more concepts separated by optional blank lines
+document = { SOI ~ NEWLINE* ~ (concept ~ NEWLINE*)+ ~ EOI }
+
+/// A concept with its facets
+/// Concepts are unindented, followed by one or more facets
+concept = { concept_name ~ NEWLINE ~ facet+ }
+
+/// Concept name: any text at column 0 (no leading whitespace)
+concept_name = @{ (!NEWLINE ~ ANY)+ }
+
+/// A facet with its claims
+/// Facets have 2-space indent and '.' prefix
+facet = { INDENT2 ~ "." ~ facet_name ~ NEWLINE ~ claim+ }
+
+/// Facet name: identifier after the '.' prefix
+facet_name = @{ identifier }
+
+/// A claim line with optional inline elements
+/// Claims have 4-space indent and '-' prefix
+claim = {
+    INDENT4 ~ "-" ~ " "? ~ claim_body ~
+    condition* ~ source* ~ reference* ~
+    evolution_marker? ~ NEWLINE
+}
+
+// =============================================================================
+// CLAIM BODY
+// =============================================================================
+
+/// The main content of a claim (before conditions/sources/references)
+claim_body = @{ claim_segment+ }
+
+/// A segment of claim text (stops at inline markers)
+claim_segment = @{
+    !("|" | "@" | "&" | "[<=") ~
+    (brief_form | modified_term | word_char)+
+}
+
+// =============================================================================
+// INLINE ELEMENTS
+// =============================================================================
+
+/// Condition: circumstances under which the claim applies
+/// Syntax: | condition_text
+condition = { " "? ~ "|" ~ " "? ~ condition_text }
+condition_text = @{ (!(" |" | " @" | " &" | "[<=" | NEWLINE) ~ ANY)+ }
+
+/// Source: basis for the belief
+/// Syntax: @source_name
+source = { " "? ~ "@" ~ source_name }
+source_name = @{ identifier }
+
+/// Reference: link to another concept.facet
+/// Syntax: &Concept.facet
+reference = { " "? ~ "&" ~ reference_target }
+reference_target = @{ identifier ~ "." ~ identifier }
+
+// =============================================================================
+// BRIEF FORMS
+// =============================================================================
+
+/// Brief form: compact relationship notation
+/// Two operands connected by an operator
+brief_form = { operand ~ " "? ~ operator ~ " "? ~ operand }
+
+/// Brief form operators (ordered by length for proper matching)
+operator = @{
+    "=>" |   // causes, leads to
+    "<=" |   // caused by, results from (NOTE: not inside [...])
+    "<>" |   // mutual, bidirectional
+    "><" |   // tension, conflicts with
+    "//" |   // regardless of
+    "vs" |   // in contrast to
+    "~"  |   // similar to, resembles
+    "="      // equivalent to, means
+}
+
+/// Operand: a term that can participate in a brief form
+operand = @{ (modifier_char* ~ word_char+) | (word_char+ ~ modifier_char*) }
+
+// =============================================================================
+// MODIFIERS
+// =============================================================================
+
+/// A term with an attached modifier
+modified_term = @{ word_char+ ~ modifier_char+ }
+
+/// Modifier characters (suffix markers)
+modifier_char = { "^" | "!" | "?" | "*" }
+
+/// Special case: 'v' modifier (decreasing)
+/// Only treated as modifier when space-separated or at word end
+modifier_v = { " v" ~ (" " | NEWLINE | "|" | "@" | "&") }
+
+// =============================================================================
+// EVOLUTION MARKERS
+// =============================================================================
+
+/// Evolution marker: indicates belief supersession
+/// Syntax: [<= prior belief]
+evolution_marker = { " "? ~ "[<=" ~ " "? ~ prior_belief ~ "]" }
+
+/// The superseded belief text
+prior_belief = @{ (!"]" ~ ANY)+ }
+
+// =============================================================================
+// PRIMITIVES
+// =============================================================================
+
+/// Valid identifier characters (concept names, facet names, source names)
+identifier = @{ (ASCII_ALPHANUMERIC | "-" | "_")+ }
+
+/// Word characters (letters, numbers, hyphens)
+word_char = { ASCII_ALPHANUMERIC | "-" | "_" | "'" }
+
+/// Indentation levels
+INDENT2 = _{ "  " }      // 2 spaces for facets
+INDENT4 = _{ "    " }    // 4 spaces for claims
+
+/// Whitespace (not including newlines)
+WHITESPACE = _{ " " | "\t" }
+
+/// Newline
+NEWLINE = _{ "\r\n" | "\n" | "\r" }
+
+// =============================================================================
+// COMMENTS (for documentation; not part of .wvf files)
+// =============================================================================
+
+// Worldview format does not support comments in .wvf files.
+// This grammar file uses // for documentation only.
