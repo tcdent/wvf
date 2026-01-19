@@ -6,12 +6,18 @@ on:
     paths:
       - 'agent/**'
       - 'validator/**'
+      - 'spec/**'
+      - 'system.md'
+      - 'SPEC.md'
       - '.github/workflows/build.yml'
   pull_request:
     branches: [main, master]
     paths:
       - 'agent/**'
       - 'validator/**'
+      - 'spec/**'
+      - 'system.md'
+      - 'SPEC.md'
   workflow_dispatch:
   workflow_call:
     outputs:
@@ -20,7 +26,39 @@ on:
         value: worldview-tools
 
 jobs:
+  # Verify generated files are in sync with spec/tokens.yaml
+  spec-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Regenerate spec files
+        run: python spec/generate.py all
+
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated files are out of sync with spec/tokens.yaml"
+            echo ""
+            echo "The following files need to be regenerated:"
+            git status --porcelain
+            echo ""
+            echo "Run 'python spec/generate.py all' and commit the changes."
+            exit 1
+          fi
+          echo "✓ All generated files are in sync"
+
   build:
+    needs: spec-check
     runs-on: ubuntu-latest
 
     steps:
