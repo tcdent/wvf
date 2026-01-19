@@ -7,17 +7,21 @@ on:
       - 'agent/**'
       - 'validator/**'
       - 'spec/**'
+      - 'evals/**'
       - 'system.md'
       - 'SPEC.md'
       - '.github/workflows/build.yml'
+      - '.github/workflows/evals.yml'
   pull_request:
     branches: [main, master]
     paths:
       - 'agent/**'
       - 'validator/**'
       - 'spec/**'
+      - 'evals/**'
       - 'system.md'
       - 'SPEC.md'
+      - '.github/workflows/evals.yml'
   workflow_dispatch:
   workflow_call:
     outputs:
