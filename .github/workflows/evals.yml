@@ -12,11 +12,6 @@ on:
         description: 'Difficulty level (baseline, moderate, extreme, or all)'
         required: false
         default: 'all'
-      use_cli:
-        description: 'Use CLI tool for Worldview generation'
-        required: false
-        type: boolean
-        default: true
 
   # Run on PR to evals directory
   pull_request:
@@ -45,7 +40,6 @@ jobs:
           pip install -r evals/requirements.txt
 
       - name: Download Worldview tools from latest build
-        if: ${{ github.event.inputs.use_cli != 'false' }}
         uses: dawidd6/action-download-artifact@v6
         with:
           workflow: build.yml
@@ -55,7 +49,6 @@ jobs:
           if_no_artifact_found: fail
 
       - name: Make tools executable
-        if: ${{ github.event.inputs.use_cli != 'false' }}
         run: |
           chmod +x ./bin/*
           echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
@@ -76,13 +69,14 @@ jobs:
 
       - name: Run evaluations
         env:
+          PYTHONUNBUFFERED: "1"
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           mkdir -p results
 
           # Build command
-          CMD="python -m evals run --verbose --output results"
+          CMD="python -m evals run --verbose --output results --worldview-cli ./bin/worldview"
 
           # Add models
           if [ "${{ steps.models.outputs.use_all }}" == "true" ]; then
@@ -95,11 +89,6 @@ jobs:
           DIFFICULTY="${{ github.event.inputs.difficulty || 'all' }}"
           if [ "$DIFFICULTY" != "all" ]; then
             CMD="$CMD --difficulty $DIFFICULTY"
-          fi
-
-          # Add CLI flag (default: enabled, unless explicitly disabled)
-          if [ "${{ github.event.inputs.use_cli }}" != "false" ]; then
-            CMD="$CMD --use-cli --worldview-cli ./bin/worldview"
           fi
 
           echo "Running: $CMD"

@@ -19,6 +19,7 @@ from pathlib import Path
 
 def cmd_run(args):
     """Run evaluations."""
+    print("Starting evaluation run...", flush=True)
     from .config import ALL_MODELS, DEFAULT_MODELS, get_model, MODEL_REGISTRY
     from .runner import EvalRunner, generate_report, generate_json_results
     from .test_cases import ALL_TEST_CASES, Difficulty, get_cases_by_difficulty
@@ -31,9 +32,9 @@ def cmd_run(args):
             if model:
                 models.append(model)
             else:
-                print(f"Warning: Unknown model '{name}', skipping")
+                print(f"Warning: Unknown model '{name}', skipping", flush=True)
         if not models:
-            print("Error: No valid models specified")
+            print("Error: No valid models specified", flush=True)
             sys.exit(1)
     elif args.all_models:
         models = ALL_MODELS
@@ -46,8 +47,8 @@ def cmd_run(args):
             difficulty = Difficulty(args.difficulty)
             test_cases = get_cases_by_difficulty(difficulty)
         except ValueError:
-            print(f"Error: Unknown difficulty '{args.difficulty}'")
-            print(f"Valid options: {[d.value for d in Difficulty]}")
+            print(f"Error: Unknown difficulty '{args.difficulty}'", flush=True)
+            print(f"Valid options: {[d.value for d in Difficulty]}", flush=True)
             sys.exit(1)
     elif args.cases:
         from .test_cases import get_case_by_id
@@ -57,21 +58,21 @@ def cmd_run(args):
             if tc:
                 test_cases.append(tc)
             else:
-                print(f"Warning: Unknown test case '{case_id}', skipping")
+                print(f"Warning: Unknown test case '{case_id}', skipping", flush=True)
         if not test_cases:
-            print("Error: No valid test cases specified")
+            print("Error: No valid test cases specified", flush=True)
             sys.exit(1)
     else:
         test_cases = ALL_TEST_CASES
 
-    print(f"Running {len(test_cases)} test cases against {len(models)} models")
-    print(f"Models: {[m.display_name for m in models]}")
-    print()
+    print(f"Running {len(test_cases)} test cases against {len(models)} models", flush=True)
+    print(f"Models: {[m.display_name for m in models]}", flush=True)
+    print(f"Worldview CLI: {args.worldview_cli}", flush=True)
+    print(flush=True)
 
-    # Create runner
+    # Create runner (always uses CLI)
     runner = EvalRunner(
         models=models,
-        use_cli_tool=args.use_cli,
         worldview_cli_path=args.worldview_cli,
         verbose=args.verbose,
     )
@@ -163,14 +164,9 @@ def main():
         help="Output directory for report and results",
     )
     run_parser.add_argument(
-        "--use-cli",
-        action="store_true",
-        help="Use Worldview CLI tool to generate content (slower, full integration)",
-    )
-    run_parser.add_argument(
         "--worldview-cli",
         default="worldview",
-        help="Path to Worldview CLI tool",
+        help="Path to Worldview CLI tool (default: 'worldview' in PATH)",
     )
     run_parser.add_argument(
         "--verbose", "-v",

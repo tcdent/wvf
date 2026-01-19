@@ -2,13 +2,12 @@
 Worldview Evaluation Runner
 
 Orchestrates running test cases against multiple LLMs and collecting results.
+Always uses the Worldview CLI tool to generate content from fact statements.
 """
 
 import json
 import subprocess
 import tempfile
-import time
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -30,15 +29,13 @@ class EvalRunner:
     """
     Runs Worldview evaluations against LLMs.
 
-    Can either:
-    1. Use pre-defined Worldview content from test cases (fast, for testing)
-    2. Use the Worldview CLI tool to generate content from fact statements (full integration)
+    Uses the Worldview CLI tool to generate content from fact statements,
+    then evaluates LLM responses against the generated worldview.
     """
 
     def __init__(
         self,
         models: Optional[list[ModelConfig]] = None,
-        use_cli_tool: bool = False,
         worldview_cli_path: Optional[str] = None,
         verbose: bool = False,
     ):
@@ -47,12 +44,10 @@ class EvalRunner:
 
         Args:
             models: List of models to evaluate (default: DEFAULT_MODELS)
-            use_cli_tool: Whether to use CLI tool for Worldview generation
             worldview_cli_path: Path to Worldview CLI tool (default: search in PATH)
             verbose: Print detailed output
         """
         self.models = models or DEFAULT_MODELS
-        self.use_cli_tool = use_cli_tool
         self.worldview_cli_path = worldview_cli_path or "worldview"
         self.verbose = verbose
         self._clients: dict[str, LLMClient] = {}
@@ -66,14 +61,12 @@ class EvalRunner:
     def _generate_worldview_with_cli(
         self,
         fact_statement: str,
-        base_content: str = "",
     ) -> tuple[str, Optional[str]]:
         """
-        Use the Worldview CLI tool to generate/update content.
+        Use the Worldview CLI tool to generate content.
 
         Args:
-            fact_statement: The fact to add
-            base_content: Starting Worldview content (empty for new file)
+            fact_statement: The fact to process
 
         Returns:
             Tuple of (worldview_content, error_message)
@@ -81,35 +74,38 @@ class EvalRunner:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".wvf", delete=False
         ) as f:
-            f.write(base_content)
+            f.write("")  # Start with empty file
             worldview_path = f.name
 
         try:
             cmd = [
                 self.worldview_cli_path,
-                fact_statement,  # positional argument
+                fact_statement,
                 "--file",
                 worldview_path,
             ]
+
+            if self.verbose:
+                print(f"    Running CLI: {' '.join(cmd)}", flush=True)
 
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=120,  # 2 minute timeout for CLI
             )
 
             if result.returncode != 0:
                 return "", f"CLI error: {result.stderr}"
 
-            # Read the updated Worldview file
+            # Read the generated Worldview file
             with open(worldview_path) as f:
                 worldview_content = f.read()
 
             return worldview_content, None
 
         except subprocess.TimeoutExpired:
-            return "", "CLI timeout"
+            return "", "CLI timeout (120s)"
         except FileNotFoundError:
             return "", f"CLI tool not found: {self.worldview_cli_path}"
         except Exception as e:
@@ -121,34 +117,19 @@ class EvalRunner:
         self,
         test_case: TestCase,
         model: ModelConfig,
+        worldview_content: str,
     ) -> EvalResult:
         """
-        Run a single evaluation.
+        Run a single evaluation with pre-generated worldview content.
 
         Args:
             test_case: The test case to run
             model: The model to evaluate
+            worldview_content: Pre-generated worldview content
 
         Returns:
             EvalResult with response and scoring
         """
-        if self.verbose:
-            print(f"  Running: {test_case.id} with {model.display_name}")
-
-        # Get Worldview content
-        if self.use_cli_tool:
-            worldview_content, error = self._generate_worldview_with_cli(test_case.fact_statement)
-            if error:
-                return EvalResult(
-                    test_case=test_case,
-                    model_name=model.display_name,
-                    response="",
-                    score=EvalScore(),
-                    error=f"Worldview generation failed: {error}",
-                )
-        else:
-            worldview_content = test_case.wsl_content
-
         # Build prompt and query
         system_prompt = build_eval_prompt(worldview_content)
         question = test_case.question
@@ -189,34 +170,6 @@ class EvalRunner:
             output_tokens=response.output_tokens,
         )
 
-    def run_case(
-        self,
-        test_case: TestCase,
-        models: Optional[list[ModelConfig]] = None,
-    ) -> list[EvalResult]:
-        """
-        Run a single test case against specified models.
-
-        Args:
-            test_case: The test case to run
-            models: Models to test (default: self.models)
-
-        Returns:
-            List of EvalResults, one per model
-        """
-        models = models or self.models
-        results = []
-
-        for model in models:
-            result = self._run_single_eval(test_case, model)
-            results.append(result)
-
-            if self.verbose:
-                status = "PASS" if result.success else "FAIL"
-                print(f"    [{status}] Score: {result.score.overall_score:.2f}")
-
-        return results
-
     def run_all(
         self,
         test_cases: Optional[list[TestCase]] = None,
@@ -224,6 +177,9 @@ class EvalRunner:
     ) -> dict[str, list[EvalResult]]:
         """
         Run all test cases against all models.
+
+        Generates worldview content once per test case, then runs all models
+        against that same content.
 
         Args:
             test_cases: Cases to run (default: ALL_TEST_CASES)
@@ -239,24 +195,50 @@ class EvalRunner:
             m.display_name: [] for m in models
         }
 
-        total = len(test_cases) * len(models)
+        total_evals = len(test_cases) * len(models)
         current = 0
 
         for test_case in test_cases:
             if self.verbose:
-                print(f"\nTest: {test_case.name} [{test_case.difficulty.value}]")
+                print(f"\nTest: {test_case.name} [{test_case.difficulty.value}]", flush=True)
+                print(f"  Generating worldview for: {test_case.fact_statement[:50]}...", flush=True)
 
+            # Generate worldview content ONCE for this test case
+            worldview_content, cli_error = self._generate_worldview_with_cli(
+                test_case.fact_statement
+            )
+
+            if cli_error:
+                # If CLI fails, create error results for all models
+                if self.verbose:
+                    print(f"  [CLI ERROR] {cli_error}", flush=True)
+                for model in models:
+                    current += 1
+                    result = EvalResult(
+                        test_case=test_case,
+                        model_name=model.display_name,
+                        response="",
+                        score=EvalScore(),
+                        error=f"Worldview generation failed: {cli_error}",
+                    )
+                    results_by_model[model.display_name].append(result)
+                continue
+
+            if self.verbose:
+                print(f"  Worldview generated ({len(worldview_content)} chars)", flush=True)
+
+            # Run all models against the same worldview content
             for model in models:
                 current += 1
                 if self.verbose:
-                    print(f"  [{current}/{total}] {model.display_name}...")
+                    print(f"  [{current}/{total_evals}] {model.display_name}...", flush=True)
 
-                result = self._run_single_eval(test_case, model)
+                result = self._run_single_eval(test_case, model, worldview_content)
                 results_by_model[model.display_name].append(result)
 
                 if self.verbose:
                     status = "PASS" if result.success else ("ERROR" if result.error else "FAIL")
-                    print(f"    [{status}] Score: {result.score.overall_score:.2f}")
+                    print(f"    [{status}] Score: {result.score.overall_score:.2f}", flush=True)
 
         return results_by_model
 
