@@ -1,0 +1,74 @@
+name: Build WSL Tools
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'agent/**'
+      - 'validator/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'agent/**'
+      - 'validator/**'
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      artifact-name:
+        description: "Name of the uploaded artifact"
+        value: wsl-tools
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build validator
+        run: |
+          cd validator
+          cargo build --release
+
+      - name: Build agent
+        run: |
+          cd agent
+          ./setup.sh
+          cargo build --release
+
+      - name: Run validator tests
+        run: |
+          cd validator
+          cargo test
+
+      - name: Collect binaries
+        run: |
+          mkdir -p dist
+          cp validator/target/release/wsl-validate dist/
+          cp agent/target/release/wsl dist/
+          chmod +x dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wsl-tools
+          path: dist/
+          retention-days: 7
