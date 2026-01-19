@@ -48,41 +48,21 @@ CLAUDE_OPUS = ModelConfig(
 
 CLAUDE_HAIKU = ModelConfig(
     provider=Provider.ANTHROPIC,
-    model_id="claude-haiku-4-20250514",
-    display_name="Claude Haiku 4",
+    model_id="claude-haiku-4-5-20251001",
+    display_name="Claude Haiku 4.5",
 )
 
 # OpenAI Models
 GPT_5_2 = ModelConfig(
     provider=Provider.OPENAI,
-    model_id="gpt-5.2",  # Placeholder - adjust when available
+    model_id="gpt-5.2",
     display_name="GPT-5.2",
 )
 
-GPT_4O = ModelConfig(
+GPT_5_MINI = ModelConfig(
     provider=Provider.OPENAI,
-    model_id="gpt-4o",
-    display_name="GPT-4o",
-)
-
-GPT_4O_MINI = ModelConfig(
-    provider=Provider.OPENAI,
-    model_id="gpt-4o-mini",
-    display_name="GPT-4o Mini",
-)
-
-O1 = ModelConfig(
-    provider=Provider.OPENAI,
-    model_id="o1",
-    display_name="o1",
-    temperature=1.0,  # o1 requires temperature=1
-)
-
-O1_MINI = ModelConfig(
-    provider=Provider.OPENAI,
-    model_id="o1-mini",
-    display_name="o1 Mini",
-    temperature=1.0,
+    model_id="gpt-5-mini",
+    display_name="GPT-5 Mini",
 )
 
 
@@ -91,16 +71,14 @@ ALL_MODELS = [
     CLAUDE_SONNET,
     CLAUDE_OPUS,
     CLAUDE_HAIKU,
-    GPT_4O,
-    GPT_4O_MINI,
-    O1,
-    O1_MINI,
+    GPT_5_2,
+    GPT_5_MINI,
 ]
 
 # Default models for quick runs
 DEFAULT_MODELS = [
     CLAUDE_SONNET,
-    GPT_4O,
+    GPT_5_2,
 ]
 
 # Model lookup by name
@@ -109,10 +87,7 @@ MODEL_REGISTRY = {
     "claude-opus": CLAUDE_OPUS,
     "claude-haiku": CLAUDE_HAIKU,
     "gpt-5.2": GPT_5_2,
-    "gpt-4o": GPT_4O,
-    "gpt-4o-mini": GPT_4O_MINI,
-    "o1": O1,
-    "o1-mini": O1_MINI,
+    "gpt-5-mini": GPT_5_MINI,
 }
 
 
