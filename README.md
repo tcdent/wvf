@@ -24,111 +24,82 @@ Trust
     - asymmetric vs formation &Trust.formation
 ```
 
-### Key Concepts
+<!-- BEGIN GENERATED LANGUAGE SPEC -->
+## Language Specification
 
-- **Concepts**: Subjects of belief (e.g., Trust, Power, Human-nature)
-- **Facets**: Aspects or dimensions (e.g., .formation, .erosion)
-- **Claims**: Assertions about a facet
-- **Conditions**: When/if the claim applies (prefix: `|`)
-- **Sources**: Basis for belief (prefix: `@`)
-- **References**: Links to other concepts (prefix: `&`)
+### Grammar
 
-### Brief Form Operators
+```ebnf
+document    = concept+ ;
+concept     = concept_name NEWLINE facet+ ;
+facet       = INDENT(2) '.' facet_name NEWLINE claim+ ;
+claim       = INDENT(4) '-' claim_body [condition*] [source*] [reference*] ;
 
-| Symbol | Meaning |
-|--------|---------|
-| `=>` | causes, leads to |
-| `<=` | caused by |
-| `<>` | mutual, bidirectional |
-| `><` | tension, conflicts with |
-| `~` | similar to |
-| `!` | emphatic, strong |
-| `?` | uncertain |
-| `^` | increasing |
-| `v` | decreasing |
+condition   = '|' text ;
+source      = '@' identifier ;
+reference   = '&' concept_name ['.' facet_name] ;
+```
 
-<!-- BEGIN GENERATED SYNTAX DIAGRAMS -->
-## Syntax Diagrams
+### Structure
 
-### Document
+```
+Concept           (unindented, bare text)
+  .facet          (2-space indent, dot prefix)
+    - claim       (4-space indent, dash prefix)
+```
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 60" width="168" height="60">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">document</text>
-  <circle cx="20" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><line x1="28" y1="35" x2="40" y2="35" stroke="#333" stroke-width="2"/><rect x="40" y="20" width="83" height="30" rx="0" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="81" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">concept</text><path d="M123,35 Q138,35 138,55 L25,55 Q25,35 40,35" fill="none" stroke="#333" stroke-width="2" marker-start="url(#arrow)"/><line x1="123" y1="35" x2="138" y2="35" stroke="#333" stroke-width="2"/><circle cx="146" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><circle cx="146" cy="35" r="4" fill="#333"/>
-</svg>
+### Inline Elements
 
+| Symbol | Name | Description |
+|--------|------|-------------|
+| `|` | condition | when/if applies |
+| `@` | source | basis for belief |
+| `&` | reference | links to other concept.facet |
 
-### Concept
+### Brief Forms
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 293 60" width="293" height="60">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">concept</text>
-  <circle cx="20" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><line x1="28" y1="35" x2="40" y2="35" stroke="#333" stroke-width="2"/><rect x="40" y="20" width="128" height="30" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="104" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-style="italic" fill="#333">concept_name</text><line x1="168" y1="35" x2="183" y2="35" stroke="#333" stroke-width="2"/><rect x="183" y="20" width="65" height="30" rx="0" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="215" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">facet</text><path d="M248,35 Q263,35 263,55 L168,55 Q168,35 183,35" fill="none" stroke="#333" stroke-width="2" marker-start="url(#arrow)"/><line x1="248" y1="35" x2="263" y2="35" stroke="#333" stroke-width="2"/><circle cx="271" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><circle cx="271" cy="35" r="4" fill="#333"/>
-</svg>
+Compact operators for common relationships:
 
+| Symbol | Meaning | Example |
+|--------|---------|---------|
+| `=>` | causes, leads to | `power => corruption` |
+| `<=` | caused by, results from | `trust <= consistency` |
+| `<>` | mutual, bidirectional | `accountability <> trust` |
+| `><` | tension, conflicts with | `efficiency >< thoroughness` |
+| `~` | similar to, resembles | `authority ~ influence` |
+| `=` | equivalent to, means | `formal = official` |
+| `vs` | in contrast to | `asymmetric vs formation` |
+| `//` | regardless of | `self-perpetuate // original purpose` |
 
-### Facet
+### Modifiers
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 337 60" width="337" height="60">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">facet</text>
-  <circle cx="20" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><line x1="28" y1="35" x2="40" y2="35" stroke="#333" stroke-width="2"/><rect x="40" y="20" width="47" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="63" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">  .</text><line x1="87" y1="35" x2="102" y2="35" stroke="#333" stroke-width="2"/><rect x="102" y="20" width="110" height="30" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="157" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-style="italic" fill="#333">facet_name</text><line x1="212" y1="35" x2="227" y2="35" stroke="#333" stroke-width="2"/><rect x="227" y="20" width="65" height="30" rx="0" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="259" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">claim</text><path d="M292,35 Q307,35 307,55 L212,55 Q212,35 227,35" fill="none" stroke="#333" stroke-width="2" marker-start="url(#arrow)"/><line x1="292" y1="35" x2="307" y2="35" stroke="#333" stroke-width="2"/><circle cx="315" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><circle cx="315" cy="35" r="4" fill="#333"/>
-</svg>
+Suffix markers that inflect claim meaning:
 
+| Symbol | Meaning | Example |
+|--------|---------|---------|
+| `^` | increasing, trending up | `concentration^` |
+| `v` | decreasing, trending down | `trust v` |
+| `!` | strong, emphatic, high confidence | `fast !` |
+| `?` | uncertain, contested, tentative | `free-will?` |
+| `*` | notable, important, flagged | `paradigm-shift*` |
 
-### Claim
+### Evolution
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 692 60" width="692" height="60">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">claim</text>
-  <circle cx="20" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><line x1="28" y1="35" x2="40" y2="35" stroke="#333" stroke-width="2"/><rect x="40" y="20" width="65" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="72" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">    -</text><line x1="105" y1="35" x2="120" y2="35" stroke="#333" stroke-width="2"/><rect x="120" y="20" width="110" height="30" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="175" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-style="italic" fill="#333">claim_body</text><line x1="230" y1="35" x2="245" y2="35" stroke="#333" stroke-width="2"/><path d="M245,35 Q245,10 265,10 L364,10 Q384,10 384,35" fill="none" stroke="#333" stroke-width="2"/><rect x="245" y="20" width="119" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="304" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">| condition</text><line x1="384" y1="35" x2="399" y2="35" stroke="#333" stroke-width="2"/><path d="M399,35 Q399,10 419,10 L482,10 Q502,10 502,35" fill="none" stroke="#333" stroke-width="2"/><rect x="399" y="20" width="83" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="440" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">@source</text><line x1="502" y1="35" x2="517" y2="35" stroke="#333" stroke-width="2"/><path d="M517,35 Q517,10 537,10 L627,10 Q647,10 647,35" fill="none" stroke="#333" stroke-width="2"/><rect x="517" y="20" width="110" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="572" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">&amp;reference</text><line x1="647" y1="35" x2="662" y2="35" stroke="#333" stroke-width="2"/><circle cx="670" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><circle cx="670" cy="35" r="4" fill="#333"/>
-</svg>
+Supersession marker `[<= prior belief]` indicates a belief that replaces a prior one:
 
+```
+- adaptive [<= inherently good]
+```
 
-### Brief Form
+### Claim Syntax
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 369 160" width="369" height="160">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">brief_form</text>
-  <circle cx="20" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><line x1="28" y1="35" x2="40" y2="35" stroke="#333" stroke-width="2"/><rect x="40" y="20" width="83" height="30" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="81" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-style="italic" fill="#333">operand</text><line x1="123" y1="35" x2="138" y2="35" stroke="#333" stroke-width="2"/><path d="M138,35 Q148,-25 158,-25" fill="none" stroke="#333" stroke-width="2"/><rect x="158" y="-40" width="38" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="177" y="-20" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">=&gt;</text><path d="M196,-25 Q206,-25 216,35" fill="none" stroke="#333" stroke-width="2"/><path d="M138,35 Q148,5 158,5" fill="none" stroke="#333" stroke-width="2"/><rect x="158" y="-10" width="38" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="177" y="10" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">&lt;=</text><path d="M196,5 Q206,5 216,35" fill="none" stroke="#333" stroke-width="2"/><rect x="158" y="20" width="38" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="177" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">&lt;&gt;</text><path d="M138,35 Q148,65 158,65" fill="none" stroke="#333" stroke-width="2"/><rect x="158" y="50" width="38" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="177" y="70" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">&gt;&lt;</text><path d="M196,65 Q206,65 216,35" fill="none" stroke="#333" stroke-width="2"/><line x1="226" y1="35" x2="241" y2="35" stroke="#333" stroke-width="2"/><rect x="241" y="20" width="83" height="30" fill="#fff4e8" stroke="#333" stroke-width="2"/><text x="282" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-style="italic" fill="#333">operand</text><line x1="324" y1="35" x2="339" y2="35" stroke="#333" stroke-width="2"/><circle cx="347" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><circle cx="347" cy="35" r="4" fill="#333"/>
-</svg>
+Claims follow positional grammar—position implies role:
 
+```
+- claim_text | condition @source &reference
+```
 
-### Modifier
-
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 190" width="164" height="190">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">modifier</text>
-  <circle cx="20" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><line x1="28" y1="35" x2="40" y2="35" stroke="#333" stroke-width="2"/><path d="M40,35 Q50,-25 60,-25" fill="none" stroke="#333" stroke-width="2"/><rect x="60" y="-40" width="29" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="74" y="-20" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">^</text><path d="M89,-25 Q99,-25 109,35" fill="none" stroke="#333" stroke-width="2"/><path d="M40,35 Q50,5 60,5" fill="none" stroke="#333" stroke-width="2"/><rect x="60" y="-10" width="29" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="74" y="10" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">v</text><path d="M89,5 Q99,5 109,35" fill="none" stroke="#333" stroke-width="2"/><rect x="60" y="20" width="29" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="74" y="40" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">!</text><path d="M40,35 Q50,65 60,65" fill="none" stroke="#333" stroke-width="2"/><rect x="60" y="50" width="29" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="74" y="70" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">?</text><path d="M89,65 Q99,65 109,35" fill="none" stroke="#333" stroke-width="2"/><path d="M40,35 Q50,95 60,95" fill="none" stroke="#333" stroke-width="2"/><rect x="60" y="80" width="29" height="30" rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/><text x="74" y="100" text-anchor="middle" font-family="monospace" font-size="14" fill="#333">*</text><path d="M89,95 Q99,95 109,35" fill="none" stroke="#333" stroke-width="2"/><line x1="119" y1="35" x2="134" y2="35" stroke="#333" stroke-width="2"/><circle cx="142" cy="35" r="8" fill="none" stroke="#333" stroke-width="2"/><circle cx="142" cy="35" r="4" fill="#333"/>
-</svg>
-
-
-<!-- END GENERATED SYNTAX DIAGRAMS -->
+<!-- END GENERATED LANGUAGE SPEC -->
 
 ## Tools
 
@@ -186,22 +157,26 @@ python -m evals list-cases
 ## Project Structure
 
 ```
-worldview/
-├── agent/                 # Rust agent CLI
-│   └── src/main.rs        # Agent implementation with embedded spec
-├── validator/             # Rust validator
-│   ├── src/lib.rs         # Validation library
-│   └── src/main.rs        # CLI tool
-├── evals/                 # Python evaluation framework
-│   ├── cli.py             # Evaluation CLI
-│   ├── runner.py          # Test orchestration
-│   ├── evaluator.py       # Response scoring
-│   ├── test_cases.py      # Test case definitions
-│   ├── worldview_prompt.py # System prompts
-│   └── llm_clients.py     # LLM provider clients
-├── SPEC.md                # Full format specification
-├── system.md              # Condensed system prompt
-└── example.wvf            # Example document
+wvf/
+├── spec/                    # Canonical specification
+│   ├── tokens.yaml          # Token definitions (source of truth)
+│   ├── grammar.pest         # PEG grammar
+│   └── generate.py          # Generates docs and code from tokens.yaml
+├── validator/               # Rust validator
+│   ├── src/lib.rs           # Validation library
+│   ├── src/main.rs          # CLI tool
+│   └── build.rs             # Generates tokens from spec at compile time
+├── agent/                   # Rust agent CLI
+│   └── src/main.rs          # LLM-powered notation converter
+├── evals/                   # Python evaluation framework
+│   ├── cli.py               # Evaluation CLI
+│   ├── runner.py            # Test orchestration
+│   ├── evaluator.py         # Response scoring
+│   ├── test_cases.py        # Test case definitions
+│   └── llm_clients.py       # LLM provider clients
+├── SPEC.md                  # Full format specification
+├── system.md                # Condensed system prompt (generated)
+└── example.wvf              # Example document
 ```
 
 ## Building

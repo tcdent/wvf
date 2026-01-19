@@ -2,7 +2,7 @@
 """
 Worldview Format Specification Generator
 
-Generates documentation, code, and diagrams from canonical definitions.
+Generates documentation and code from canonical definitions.
 
 Usage:
     python generate.py [command]
@@ -12,7 +12,6 @@ Commands:
     rust        - Generate Rust constants for validator
     system      - Generate condensed system prompt
     markdown    - Generate markdown tables
-    diagrams    - Generate railroad syntax diagrams (SVG)
     readme      - Update README.md with generated content
 """
 
@@ -20,7 +19,7 @@ import sys
 import re
 import yaml
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 SPEC_DIR = Path(__file__).parent
 ROOT_DIR = SPEC_DIR.parent
@@ -35,247 +34,77 @@ def load_tokens() -> dict:
 
 
 # =============================================================================
-# RAILROAD DIAGRAM GENERATION
+# LANGUAGE SPECIFICATION GENERATION (for README)
 # =============================================================================
 
-class RailroadDiagram:
-    """Simple SVG railroad diagram generator."""
+def generate_language_spec(tokens: dict) -> str:
+    """Generate a language specification section following standard documentation conventions."""
+    output = []
 
-    def __init__(self, title: str):
-        self.title = title
-        self.elements: List[Tuple[str, str]] = []  # (type, content)
+    output.append("## Language Specification\n")
 
-    def terminal(self, text: str):
-        """Add a terminal (literal text)."""
-        self.elements.append(("terminal", text))
-        return self
+    # Grammar (EBNF-style)
+    output.append("### Grammar\n")
+    output.append("```ebnf")
+    output.append("document    = concept+ ;")
+    output.append("concept     = concept_name NEWLINE facet+ ;")
+    output.append("facet       = INDENT(2) '.' facet_name NEWLINE claim+ ;")
+    output.append("claim       = INDENT(4) '-' claim_body [condition*] [source*] [reference*] ;")
+    output.append("")
+    output.append("condition   = '|' text ;")
+    output.append("source      = '@' identifier ;")
+    output.append("reference   = '&' concept_name ['.' facet_name] ;")
+    output.append("```\n")
 
-    def nonterminal(self, text: str):
-        """Add a non-terminal (reference to another rule)."""
-        self.elements.append(("nonterminal", text))
-        return self
+    # Structure
+    output.append("### Structure\n")
+    output.append("```")
+    output.append("Concept           (unindented, bare text)")
+    output.append("  .facet          (2-space indent, dot prefix)")
+    output.append("    - claim       (4-space indent, dash prefix)")
+    output.append("```\n")
 
-    def choice(self, *options: str):
-        """Add a choice between options."""
-        self.elements.append(("choice", options))
-        return self
-
-    def optional(self, text: str, is_terminal: bool = True):
-        """Add an optional element."""
-        self.elements.append(("optional", (text, is_terminal)))
-        return self
-
-    def repeat(self, text: str, is_terminal: bool = False):
-        """Add a repeating element."""
-        self.elements.append(("repeat", (text, is_terminal)))
-        return self
-
-    def to_svg(self) -> str:
-        """Generate SVG representation."""
-        # Calculate dimensions
-        x = 20
-        y = 35
-        height = 60
-        elements_svg = []
-
-        # Start circle
-        elements_svg.append(f'<circle cx="{x}" cy="{y}" r="8" fill="none" stroke="#333" stroke-width="2"/>')
-        x += 20
-
-        # Draw line
-        elements_svg.append(f'<line x1="{x-12}" y1="{y}" x2="{x}" y2="{y}" stroke="#333" stroke-width="2"/>')
-
-        for elem_type, content in self.elements:
-            if elem_type == "terminal":
-                # Rounded rectangle with text
-                text_width = len(content) * 9 + 20
-                elements_svg.append(
-                    f'<rect x="{x}" y="{y-15}" width="{text_width}" height="30" '
-                    f'rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/>'
-                )
-                elements_svg.append(
-                    f'<text x="{x + text_width//2}" y="{y+5}" text-anchor="middle" '
-                    f'font-family="monospace" font-size="14" fill="#333">{self._escape(content)}</text>'
-                )
-                x += text_width
-
-            elif elem_type == "nonterminal":
-                # Rectangle with text
-                text_width = len(content) * 9 + 20
-                elements_svg.append(
-                    f'<rect x="{x}" y="{y-15}" width="{text_width}" height="30" '
-                    f'fill="#fff4e8" stroke="#333" stroke-width="2"/>'
-                )
-                elements_svg.append(
-                    f'<text x="{x + text_width//2}" y="{y+5}" text-anchor="middle" '
-                    f'font-family="sans-serif" font-size="14" font-style="italic" fill="#333">{content}</text>'
-                )
-                x += text_width
-
-            elif elem_type == "choice":
-                # Multiple paths
-                options = content
-                max_width = max(len(opt) * 9 + 20 for opt in options)
-                branch_height = 30
-                total_height = len(options) * branch_height
-                start_x = x
-
-                for i, opt in enumerate(options):
-                    opt_y = y + (i - len(options)//2) * branch_height
-                    text_width = len(opt) * 9 + 20
-
-                    # Draw branch line
-                    if i != len(options)//2:
-                        elements_svg.append(
-                            f'<path d="M{start_x},{y} Q{start_x+10},{opt_y} {start_x+20},{opt_y}" '
-                            f'fill="none" stroke="#333" stroke-width="2"/>'
-                        )
-
-                    # Draw terminal
-                    elements_svg.append(
-                        f'<rect x="{start_x+20}" y="{opt_y-15}" width="{text_width}" height="30" '
-                        f'rx="15" fill="#e8f4e8" stroke="#333" stroke-width="2"/>'
-                    )
-                    elements_svg.append(
-                        f'<text x="{start_x+20 + text_width//2}" y="{opt_y+5}" text-anchor="middle" '
-                        f'font-family="monospace" font-size="14" fill="#333">{self._escape(opt)}</text>'
-                    )
-
-                    # Join back
-                    if i != len(options)//2:
-                        elements_svg.append(
-                            f'<path d="M{start_x+20+text_width},{opt_y} Q{start_x+30+max_width},{opt_y} {start_x+40+max_width},{y}" '
-                            f'fill="none" stroke="#333" stroke-width="2"/>'
-                        )
-
-                x += max_width + 50
-                height = max(height, total_height + 40)
-
-            elif elem_type == "optional":
-                text, is_term = content
-                text_width = len(text) * 9 + 20
-
-                # Bypass arc (top)
-                elements_svg.append(
-                    f'<path d="M{x},{y} Q{x},{y-25} {x+20},{y-25} L{x+text_width},{y-25} '
-                    f'Q{x+text_width+20},{y-25} {x+text_width+20},{y}" '
-                    f'fill="none" stroke="#333" stroke-width="2"/>'
-                )
-
-                # Main path with element
-                fill = "#e8f4e8" if is_term else "#fff4e8"
-                rx = "15" if is_term else "0"
-                elements_svg.append(
-                    f'<rect x="{x}" y="{y-15}" width="{text_width}" height="30" '
-                    f'rx="{rx}" fill="{fill}" stroke="#333" stroke-width="2"/>'
-                )
-                elements_svg.append(
-                    f'<text x="{x + text_width//2}" y="{y+5}" text-anchor="middle" '
-                    f'font-family="monospace" font-size="14" fill="#333">{self._escape(text)}</text>'
-                )
-                x += text_width + 20
-
-            elif elem_type == "repeat":
-                text, is_term = content
-                text_width = len(text) * 9 + 20
-
-                # Main element
-                fill = "#e8f4e8" if is_term else "#fff4e8"
-                rx = "15" if is_term else "0"
-                elements_svg.append(
-                    f'<rect x="{x}" y="{y-15}" width="{text_width}" height="30" '
-                    f'rx="{rx}" fill="{fill}" stroke="#333" stroke-width="2"/>'
-                )
-                elements_svg.append(
-                    f'<text x="{x + text_width//2}" y="{y+5}" text-anchor="middle" '
-                    f'font-family="monospace" font-size="14" fill="#333">{self._escape(text)}</text>'
-                )
-
-                # Loop back arrow
-                elements_svg.append(
-                    f'<path d="M{x+text_width},{y} Q{x+text_width+15},{y} {x+text_width+15},{y+20} '
-                    f'L{x-15},{y+20} Q{x-15},{y} {x},{y}" '
-                    f'fill="none" stroke="#333" stroke-width="2" marker-start="url(#arrow)"/>'
-                )
-                x += text_width
-
-            # Connecting line
-            elements_svg.append(f'<line x1="{x}" y1="{y}" x2="{x+15}" y2="{y}" stroke="#333" stroke-width="2"/>')
-            x += 15
-
-        # End circle (double)
-        elements_svg.append(f'<circle cx="{x+8}" cy="{y}" r="8" fill="none" stroke="#333" stroke-width="2"/>')
-        elements_svg.append(f'<circle cx="{x+8}" cy="{y}" r="4" fill="#333"/>')
-
-        width = x + 30
-
-        # Build SVG
-        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">
-  <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#333"/>
-    </marker>
-  </defs>
-  <text x="10" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="#666">{self.title}</text>
-  {"".join(elements_svg)}
-</svg>'''
-        return svg
-
-    def _escape(self, text: str) -> str:
-        """Escape special XML characters."""
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-def generate_railroad_diagrams(tokens: dict) -> dict:
-    """Generate railroad diagram SVGs for key syntax elements."""
-    diagrams = {}
-
-    # Document structure
-    doc = RailroadDiagram("document")
-    doc.repeat("concept", False)
-    diagrams["document"] = doc.to_svg()
-
-    # Concept
-    concept = RailroadDiagram("concept")
-    concept.nonterminal("concept_name").repeat("facet", False)
-    diagrams["concept"] = concept.to_svg()
-
-    # Facet
-    facet = RailroadDiagram("facet")
-    facet.terminal("  .").nonterminal("facet_name").repeat("claim", False)
-    diagrams["facet"] = facet.to_svg()
-
-    # Claim (simplified)
-    claim = RailroadDiagram("claim")
-    claim.terminal("    -").nonterminal("claim_body")
-    claim.optional("| condition").optional("@source").optional("&reference")
-    diagrams["claim"] = claim.to_svg()
+    # Inline elements
+    output.append("### Inline Elements\n")
+    output.append("| Symbol | Name | Description |")
+    output.append("|--------|------|-------------|")
+    for elem in tokens["inline_elements"]:
+        output.append(f"| `{elem['symbol']}` | {elem['name']} | {elem['meaning']} |")
+    output.append("")
 
     # Brief forms
-    bf_symbols = [bf["symbol"] for bf in tokens["brief_forms"]]
-    brief = RailroadDiagram("brief_form")
-    brief.nonterminal("operand").choice(*bf_symbols[:4]).nonterminal("operand")
-    diagrams["brief_form"] = brief.to_svg()
+    output.append("### Brief Forms\n")
+    output.append("Compact operators for common relationships:\n")
+    output.append("| Symbol | Meaning | Example |")
+    output.append("|--------|---------|---------|")
+    for bf in tokens["brief_forms"]:
+        output.append(f"| `{bf['symbol']}` | {bf['meaning']} | `{bf['example']}` |")
+    output.append("")
 
     # Modifiers
-    mod_symbols = [m["symbol"] for m in tokens["modifiers"]]
-    modifier = RailroadDiagram("modifier")
-    modifier.choice(*mod_symbols)
-    diagrams["modifier"] = modifier.to_svg()
+    output.append("### Modifiers\n")
+    output.append("Suffix markers that inflect claim meaning:\n")
+    output.append("| Symbol | Meaning | Example |")
+    output.append("|--------|---------|---------|")
+    for mod in tokens["modifiers"]:
+        output.append(f"| `{mod['symbol']}` | {mod['meaning']} | `{mod['example']}` |")
+    output.append("")
 
-    return diagrams
+    # Evolution
+    output.append("### Evolution\n")
+    evo = tokens["evolution"]["supersession"]
+    output.append(f"Supersession marker `{evo['syntax']}` indicates a belief that replaces a prior one:\n")
+    output.append("```")
+    output.append(evo['example'])
+    output.append("```\n")
 
-
-def generate_diagrams_markdown(tokens: dict) -> str:
-    """Generate markdown with embedded SVG diagrams."""
-    diagrams = generate_railroad_diagrams(tokens)
-
-    output = ["## Syntax Diagrams\n"]
-
-    for name, svg in diagrams.items():
-        output.append(f"### {name.replace('_', ' ').title()}\n")
-        output.append(svg)
-        output.append("\n")
+    # Claim order
+    output.append("### Claim Syntax\n")
+    output.append("Claims follow positional grammar—position implies role:\n")
+    output.append("```")
+    output.append("- claim_text | condition @source &reference")
+    output.append("```")
+    output.append("")
 
     return "\n".join(output)
 
@@ -636,21 +465,29 @@ def generate_system_prompt(tokens: dict) -> str:
 # =============================================================================
 
 def update_readme(tokens: dict) -> str:
-    """Update README.md with generated syntax diagrams section."""
+    """Update README.md with generated language specification section."""
     readme_path = ROOT_DIR / "README.md"
     readme_content = readme_path.read_text()
 
-    # Generate the syntax diagrams section
-    diagrams_section = generate_diagrams_markdown(tokens)
+    # Generate the language specification section
+    spec_section = generate_language_spec(tokens)
 
-    # Check if section already exists
-    start_marker = "<!-- BEGIN GENERATED SYNTAX DIAGRAMS -->"
-    end_marker = "<!-- END GENERATED SYNTAX DIAGRAMS -->"
+    # Check for old diagram markers first and replace them
+    old_start_marker = "<!-- BEGIN GENERATED SYNTAX DIAGRAMS -->"
+    old_end_marker = "<!-- END GENERATED SYNTAX DIAGRAMS -->"
 
-    new_section = f"{start_marker}\n{diagrams_section}\n{end_marker}"
+    # New markers
+    start_marker = "<!-- BEGIN GENERATED LANGUAGE SPEC -->"
+    end_marker = "<!-- END GENERATED LANGUAGE SPEC -->"
 
-    if start_marker in readme_content:
-        # Replace existing section
+    new_section = f"{start_marker}\n{spec_section}\n{end_marker}"
+
+    if old_start_marker in readme_content:
+        # Replace old diagram section with new spec section
+        pattern = f"{re.escape(old_start_marker)}.*?{re.escape(old_end_marker)}"
+        readme_content = re.sub(pattern, new_section, readme_content, flags=re.DOTALL)
+    elif start_marker in readme_content:
+        # Replace existing spec section
         pattern = f"{re.escape(start_marker)}.*?{re.escape(end_marker)}"
         readme_content = re.sub(pattern, new_section, readme_content, flags=re.DOTALL)
     else:
@@ -702,19 +539,6 @@ def main():
         system_file = ROOT_DIR / "system.md"
         system_file.write_text(system)
         print(f"\nWritten to: {system_file}")
-        if command == "all":
-            print()
-
-    if command in ("diagrams", "all"):
-        diagrams = generate_railroad_diagrams(tokens)
-        print("=== RAILROAD DIAGRAMS ===")
-        # Save diagrams to spec/diagrams/
-        diagrams_dir = SPEC_DIR / "diagrams"
-        diagrams_dir.mkdir(exist_ok=True)
-        for name, svg in diagrams.items():
-            svg_path = diagrams_dir / f"{name}.svg"
-            svg_path.write_text(svg)
-            print(f"Written: {svg_path}")
         if command == "all":
             print()
 

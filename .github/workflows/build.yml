@@ -47,7 +47,7 @@ jobs:
 
       - name: Regenerate all spec-derived files
         run: |
-          # Generate system.md, README diagrams, and spec/diagrams/
+          # Generate system.md, README language spec, etc.
           python spec/generate.py all
 
           # Note: validator tokens are generated at compile-time via build.rs
@@ -64,16 +64,6 @@ jobs:
             echo "$CHANGED"
             echo ""
             echo "Run 'python spec/generate.py all' and commit the changes."
-            exit 1
-          fi
-
-          # Check for new untracked files in spec/diagrams/
-          UNTRACKED=$(git ls-files --others --exclude-standard spec/diagrams/)
-          if [ -n "$UNTRACKED" ]; then
-            echo "::error::New diagram files need to be committed"
-            echo ""
-            echo "The following files need to be added:"
-            echo "$UNTRACKED"
             exit 1
           fi
 
