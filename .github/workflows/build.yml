@@ -6,12 +6,22 @@ on:
     paths:
       - 'agent/**'
       - 'validator/**'
+      - 'spec/**'
+      - 'evals/**'
+      - 'system.md'
+      - 'SPEC.md'
       - '.github/workflows/build.yml'
+      - '.github/workflows/evals.yml'
   pull_request:
     branches: [main, master]
     paths:
       - 'agent/**'
       - 'validator/**'
+      - 'spec/**'
+      - 'evals/**'
+      - 'system.md'
+      - 'SPEC.md'
+      - '.github/workflows/evals.yml'
   workflow_dispatch:
   workflow_call:
     outputs:
@@ -20,7 +30,57 @@ on:
         value: worldview-tools
 
 jobs:
+  # Verify generated files are in sync with spec/tokens.yaml
+  spec-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Regenerate all spec-derived files
+        run: |
+          # Generate system.md, README diagrams, and spec/diagrams/
+          python spec/generate.py all
+
+          # Note: validator tokens are generated at compile-time via build.rs
+          # so we don't need tokens_generated.rs committed anymore
+
+      - name: Check for uncommitted changes
+        run: |
+          # Check if any tracked files changed (excluding tokens_generated.rs)
+          CHANGED=$(git diff --name-only -- ':!validator/src/tokens_generated.rs')
+          if [ -n "$CHANGED" ]; then
+            echo "::error::Generated files are out of sync with spec/tokens.yaml"
+            echo ""
+            echo "The following files need to be regenerated:"
+            echo "$CHANGED"
+            echo ""
+            echo "Run 'python spec/generate.py all' and commit the changes."
+            exit 1
+          fi
+
+          # Check for new untracked files in spec/diagrams/
+          UNTRACKED=$(git ls-files --others --exclude-standard spec/diagrams/)
+          if [ -n "$UNTRACKED" ]; then
+            echo "::error::New diagram files need to be committed"
+            echo ""
+            echo "The following files need to be added:"
+            echo "$UNTRACKED"
+            exit 1
+          fi
+
+          echo "✓ All generated files are in sync"
+
   build:
+    needs: spec-check
     runs-on: ubuntu-latest
 
     steps:

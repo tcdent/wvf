@@ -42,3 +42,6 @@ htmlcov/
 # Evaluation results (local)
 results/
 *.log
+
+# Generated files (created at compile-time)
+validator/src/tokens_generated.rs

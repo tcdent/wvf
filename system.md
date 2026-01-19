@@ -16,18 +16,22 @@ Every concept has facets. Every facet has claims. Claims may include conditions,
 
 | Symbol | Meaning | Example |
 |--------|---------|---------|
-| `\|` | condition (when/if) | `- corrupts \| unchecked` |
-| `@` | source | `@historical-pattern` |
-| `&` | reference | `&Trust.formation` |
-| `=>` | causes/leads to | `power => corruption` |
-| `<=` | caused by | `trust <= consistency` |
-| `><` | tension/conflict | `efficiency >< thoroughness` |
-| `<>` | mutual/bidirectional | `accountability <> trust` |
-| `~` | similar to | `authority ~ influence` |
-| `^` | increasing | `concentration^` |
-| `v` | decreasing | `trust v` |
-| `!` | emphatic/strong | `fast !` |
-| `?` | uncertain | `free-will?` |
+| `|` | condition (when/if applies) | `- corrupts | unchecked` |
+| `@` | source (basis for belief) | `@historical-pattern` |
+| `&` | reference (links to other concept.facet) | `&Trust.formation` |
+| `=>` | causes, leads to | `power => corruption` |
+| `<=` | caused by, results from | `trust <= consistency` |
+| `<>` | mutual, bidirectional | `accountability <> trust` |
+| `><` | tension, conflicts with | `efficiency >< thoroughness` |
+| `~` | similar to, resembles | `authority ~ influence` |
+| `=` | equivalent to, means | `formal = official` |
+| `vs` | in contrast to | `asymmetric vs formation` |
+| `//` | regardless of | `self-perpetuate // original purpose` |
+| `^` | increasing, trending up | `concentration^` |
+| `v` | decreasing, trending down | `trust v` |
+| `!` | strong, emphatic, high confidence | `fast !` |
+| `?` | uncertain, contested, tentative | `free-will?` |
+| `*` | notable, important, flagged | `paradigm-shift*` |
 | `[<= prior]` | supersedes | `adaptive [<= inherently good]` |
 
 ## Claim Order
