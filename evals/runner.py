@@ -136,6 +136,7 @@ class EvalRunner:
             print(f"  Running: {test_case.id} with {model.display_name}")
 
         # Get Worldview content
+        generated_content = None
         if self.use_cli_tool:
             worldview_content, error = self._generate_worldview_with_cli(test_case.fact_statement)
             if error:
@@ -146,6 +147,7 @@ class EvalRunner:
                     score=EvalScore(),
                     error=f"Worldview generation failed: {error}",
                 )
+            generated_content = worldview_content  # Store for reporting
         else:
             worldview_content = test_case.wsl_content
 
@@ -187,6 +189,7 @@ class EvalRunner:
             score=score,
             input_tokens=response.input_tokens,
             output_tokens=response.output_tokens,
+            generated_worldview_content=generated_content,
         )
 
     def run_case(
@@ -340,6 +343,11 @@ def generate_report(
         first_result = list(model_results.values())[0]
         tc = first_result.test_case
 
+        # Check if any model has generated content (CLI mode was used)
+        has_generated_content = any(
+            r.generated_worldview_content for r in model_results.values()
+        )
+
         lines.extend([
             f"### {tc.name}",
             "",
@@ -349,12 +357,42 @@ def generate_report(
             "",
             f"> {tc.fact_statement}",
             "",
-            "#### 2. Worldview Content",
-            "",
-            "```wvf",
-            tc.wsl_content.strip(),
-            "```",
-            "",
+        ])
+
+        if has_generated_content:
+            # Show expected vs actual when CLI mode was used
+            lines.extend([
+                "#### 2. Worldview Content",
+                "",
+                "**Expected (predefined):**",
+                "```wvf",
+                tc.wsl_content.strip(),
+                "```",
+                "",
+                "**Actual (CLI-generated):**",
+            ])
+            # Show first non-None generated content (should be same for all models)
+            for r in model_results.values():
+                if r.generated_worldview_content:
+                    lines.extend([
+                        "```wvf",
+                        r.generated_worldview_content.strip(),
+                        "```",
+                    ])
+                    break
+            lines.append("")
+        else:
+            # Standard display when using predefined content
+            lines.extend([
+                "#### 2. Worldview Content",
+                "",
+                "```wvf",
+                tc.wsl_content.strip(),
+                "```",
+                "",
+            ])
+
+        lines.extend([
             "#### 3. Question Asked",
             "",
             f"> **{tc.question}**",
@@ -465,6 +503,7 @@ def generate_json_results(
                         "aligned": r.score.aligned_with_worldview,
                     },
                     "response_preview": r.response[:200] if r.response else None,
+                    "generated_worldview_content": r.generated_worldview_content,
                 }
                 for r in results
             ],

@@ -139,6 +139,9 @@ class EvalResult:
     error: Optional[str] = None
     input_tokens: int = 0
     output_tokens: int = 0
+    # When CLI mode is used, stores the actual generated worldview content
+    # (may differ from test_case.wsl_content which is the expected/predefined content)
+    generated_worldview_content: Optional[str] = None
 
     @property
     def success(self) -> bool:

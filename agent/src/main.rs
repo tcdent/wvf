@@ -24,6 +24,17 @@ When given a plain-text fact or statement:
 4. Use the edit_worldview tool to add or modify the appropriate line(s)
 5. After editing, briefly confirm what you added
 
+## Critical: Encode Only What Is Stated
+
+The Worldview file stores information the user explicitly provides for later reference. You must:
+
+- **Only encode information explicitly stated** in the user's fact or statement
+- **Never add supplementary knowledge** from your training data (e.g., if told "gravity pulls objects toward Earth", do NOT add acceleration values, formulas, or other physics facts you know)
+- **Never add assumptions or inferences** beyond what was directly stated
+- **Be token-efficient** — the model already has general knowledge; we only need to store what the user specifically wants to remember
+
+The purpose is to capture the user's specific framing and claims, not to build a comprehensive knowledge base. General facts already exist in model weights and don't need to be stored.
+
 Remember the design principles: state over narrative, predictability allows omission, conflict tolerance, freeform vocabulary, and LLM-native density.
 "#;
 
