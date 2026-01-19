@@ -1,0 +1,9 @@
+# WSL Evaluation Framework Dependencies
+
+# LiteLLM for unified LLM access
+litellm>=1.30.0
+
+# These are optional but recommended for direct provider access
+# (LiteLLM will use them if installed)
+anthropic>=0.25.0
+openai>=1.12.0
