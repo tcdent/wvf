@@ -16,7 +16,7 @@ on:
         description: 'Use CLI tool for Worldview generation'
         required: false
         type: boolean
-        default: false
+        default: true
 
   # Run on schedule (weekly)
   schedule:
@@ -30,9 +30,9 @@ on:
       - '.github/workflows/evals.yml'
 
 jobs:
-  # Build binaries first (only if use_cli is true or for full runs)
+  # Build binaries first (default: always, unless explicitly disabled)
   build:
-    if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' }}
+    if: ${{ github.event.inputs.use_cli != 'false' }}
     uses: ./.github/workflows/build.yml
 
   evaluate:
@@ -56,14 +56,14 @@ jobs:
           pip install -r evals/requirements.txt
 
       - name: Download Worldview tools
-        if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' }}
+        if: ${{ github.event.inputs.use_cli != 'false' }}
         uses: actions/download-artifact@v4
         with:
           name: worldview-tools
           path: ./bin
 
       - name: Make tools executable
-        if: ${{ github.event.inputs.use_cli == 'true' || github.event_name == 'schedule' }}
+        if: ${{ github.event.inputs.use_cli != 'false' }}
         run: |
           chmod +x ./bin/*
           echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
@@ -105,8 +105,8 @@ jobs:
             CMD="$CMD --difficulty $DIFFICULTY"
           fi
 
-          # Add CLI flag if requested
-          if [ "${{ github.event.inputs.use_cli }}" == "true" ]; then
+          # Add CLI flag (default: enabled, unless explicitly disabled)
+          if [ "${{ github.event.inputs.use_cli }}" != "false" ]; then
             CMD="$CMD --use-cli --worldview-cli ./bin/worldview"
           fi
 
