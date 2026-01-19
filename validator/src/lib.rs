@@ -7,26 +7,8 @@
 use std::fmt;
 use thiserror::Error;
 
-/// Brief form operators defined in the Worldview spec
-pub const BRIEF_FORMS: &[(&str, &str)] = &[
-    ("=>", "causes, leads to"),
-    ("<=", "caused by, results from"),
-    ("<>", "mutual, bidirectional"),
-    ("><", "tension, conflicts with"),
-    ("~", "similar to, resembles"),
-    ("=", "equivalent to, means"),
-    ("vs", "in contrast to"),
-    ("//", "regardless of"),
-];
-
-/// Modifier symbols defined in the Worldview spec
-pub const MODIFIERS: &[(&str, &str)] = &[
-    ("^", "increasing, trending up"),
-    ("v", "decreasing, trending down"),
-    ("!", "strong, emphatic, high confidence"),
-    ("?", "uncertain, contested, tentative"),
-    ("*", "notable, important, flagged"),
-];
+// Token definitions generated at compile time from spec/tokens.yaml
+include!(concat!(env!("OUT_DIR"), "/tokens.rs"));
 
 /// Errors that can occur during Worldview validation
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
