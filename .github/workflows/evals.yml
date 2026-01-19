@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       models:
-        description: 'Models to evaluate (comma-separated, e.g., claude-sonnet,gpt-4o)'
+        description: 'Models to evaluate (comma-separated, e.g., claude-sonnet,gpt-4o, or "all")'
         required: false
-        default: 'claude-sonnet,gpt-4o'
+        default: 'all'
       difficulty:
         description: 'Difficulty level (baseline, moderate, extreme, or all)'
         required: false
@@ -71,10 +71,16 @@ jobs:
       - name: Parse model list
         id: models
         run: |
-          # Convert comma-separated to space-separated
-          MODELS="${{ github.event.inputs.models || 'claude-sonnet,gpt-4o' }}"
-          MODELS_SPACE="${MODELS//,/ }"
-          echo "list=${MODELS_SPACE}" >> $GITHUB_OUTPUT
+          MODELS="${{ github.event.inputs.models || 'all' }}"
+          if [ "$MODELS" == "all" ]; then
+            echo "use_all=true" >> $GITHUB_OUTPUT
+            echo "list=" >> $GITHUB_OUTPUT
+          else
+            # Convert comma-separated to space-separated
+            MODELS_SPACE="${MODELS//,/ }"
+            echo "use_all=false" >> $GITHUB_OUTPUT
+            echo "list=${MODELS_SPACE}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Run evaluations
         env:
@@ -87,7 +93,11 @@ jobs:
           CMD="python -m evals run --verbose --output results"
 
           # Add models
-          CMD="$CMD --models ${{ steps.models.outputs.list }}"
+          if [ "${{ steps.models.outputs.use_all }}" == "true" ]; then
+            CMD="$CMD --all-models"
+          else
+            CMD="$CMD --models ${{ steps.models.outputs.list }}"
+          fi
 
           # Add difficulty filter if not 'all'
           DIFFICULTY="${{ github.event.inputs.difficulty || 'all' }}"
