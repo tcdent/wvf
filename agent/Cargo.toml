@@ -10,8 +10,8 @@ name = "worldview"
 path = "src/main.rs"
 
 [dependencies]
-# Core agent functionality (vendored)
-codey = { path = "vendor/codey" }
+# Core agent functionality (vendored, minimal features for library usage)
+codey = { path = "vendor/codey", default-features = false }
 
 # Worldview validation
 worldview-validator = { path = "../validator" }
