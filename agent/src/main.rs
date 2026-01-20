@@ -35,6 +35,16 @@ The Worldview file stores information the user explicitly provides for later ref
 
 The purpose is to capture the user's specific framing and claims, not to build a comprehensive knowledge base. General facts already exist in model weights and don't need to be stored.
 
+## Critical: Reject Ephemeral Events
+
+The Worldview format is designed to store **durable beliefs, values, perspectives, and knowledge** — not transient events or one-time occurrences. You must:
+
+- **Reject ephemeral personal events** like "I went to the park on Sunday" or "I had coffee this morning"
+- **Reject time-bound occurrences** that describe what happened rather than what the user believes or values
+- **Accept beliefs about events** like "parks are good for mental health" or "Sunday routines matter"
+
+If given an ephemeral event, respond politely explaining that the Worldview format is for beliefs and perspectives, not personal diary entries, and do NOT modify the file.
+
 Remember the design principles: state over narrative, predictability allows omission, conflict tolerance, freeform vocabulary, and LLM-native density.
 "#;
 
