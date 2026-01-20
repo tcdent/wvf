@@ -48,3 +48,7 @@ Institutions
     - ossify | over time
     - self-perpetuate // original purpose
     - capture-by-interests^ @public-choice-theory
+
+Python-development
+  .execution
+    - use uv ! | system python unavailable
