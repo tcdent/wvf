@@ -390,6 +390,40 @@ def evaluate_write(
     expected = test_case.expected
     score = WriteScore(min_claims_required=expected.min_claims)
 
+    # Special handling for REJECT cases (should_modify_file=False)
+    if not test_case.should_modify_file:
+        # For rejection cases, the file should NOT be modified
+        # Compare to base_content - they should be identical
+        base_normalized = test_case.base_content.strip()
+        generated_normalized = generated_content.strip()
+
+        if base_normalized == generated_normalized:
+            # Success: file was not modified
+            score.syntax_valid = True
+            score.syntax_score = 1.0
+            score.concept_score = 1.0
+            score.facet_score = 1.0
+            score.operator_score = 1.0
+            score.term_score = 1.0
+            score.claim_count_score = 1.0
+            score.overall_score = 1.0
+            score.notes = "Correctly rejected: file unchanged"
+            return score
+        else:
+            # Failure: file was modified when it shouldn't have been
+            score.syntax_valid = True  # Syntax might be valid but behavior is wrong
+            score.syntax_score = 1.0
+            score.overall_score = 0.0
+            score.notes = "Failed to reject: file was modified when it should have been left unchanged"
+
+            # Still check for forbidden terms to provide useful feedback
+            for term in expected.forbidden_terms:
+                if find_term(term, generated_content):
+                    score.forbidden_terms_found.append(term)
+            if score.forbidden_terms_found:
+                score.notes += f"; Forbidden terms found: {score.forbidden_terms_found}"
+            return score
+
     # Syntax validation
     if validator_path:
         syntax_valid, errors, warnings = validate_syntax_with_binary(

@@ -338,7 +338,9 @@ async fn main() -> Result<()> {
     while let Some(step) = agent.next().await {
         match step {
             AgentStep::TextDelta(text) => {
-                print!("{}", text);
+                if cli.verbose {
+                    print!("{}", text);
+                }
             }
             AgentStep::ThinkingDelta(thinking) => {
                 if cli.verbose {
@@ -403,12 +405,12 @@ async fn main() -> Result<()> {
                 if cli.verbose {
                     eprintln!("[error:{}ms] {}", total_elapsed.as_millis(), e);
                 }
-                eprintln!("\nError: {}", e);
+                eprintln!("Error: {}", e);
                 std::process::exit(1);
             }
         }
     }
 
-    println!("\n\nWorldview file updated: {:?}", file_path);
+    // Exit 0 for success (including correct rejections)
     Ok(())
 }

@@ -36,6 +36,7 @@ class TaskType(Enum):
     CREATE = "create"  # Add to empty file
     APPEND = "append"  # Add new content to existing file
     UPDATE = "update"  # Modify existing content
+    REJECT = "reject"  # Should refuse to modify file (ephemeral events, etc.)
 
 
 @dataclass
@@ -88,6 +89,7 @@ class WriteTestCase:
     expected: ExpectedStructure
     base_content: str = ""
     notes: Optional[str] = None
+    should_modify_file: bool = True  # False for REJECT cases
 
 
 # =============================================================================
@@ -381,10 +383,72 @@ COMPLEX_CASES = [
 ]
 
 # =============================================================================
+# REJECTION/FILTER TEST CASES
+# Tests for ephemeral events that should be rejected or filtered
+# =============================================================================
+
+REJECTION_CASES = [
+    WriteTestCase(
+        id="accept-dev-preference",
+        name="Development tooling preference",
+        complexity=Complexity.SIMPLE,
+        task_type=TaskType.CREATE,
+        fact_statement=(
+            "always use uv to run python projects a system python install is not available"
+        ),
+        expected=ExpectedStructure(
+            required_concepts=["Python"],
+            required_facets=[".execution", ".tooling", ".development"],
+            required_terms=["uv"],
+            min_claims=1,
+        ),
+        notes="Valid belief about development practices - should be accepted",
+    ),
+    WriteTestCase(
+        id="reject-ephemeral-event",
+        name="Ephemeral personal event",
+        complexity=Complexity.SIMPLE,
+        task_type=TaskType.REJECT,
+        fact_statement="on sunday I went to the park and met a friend",
+        expected=ExpectedStructure(
+            required_concepts=[],
+            required_facets=[],
+            required_terms=[],
+            forbidden_terms=["sunday", "park", "friend", "Personal"],
+            min_claims=0,
+        ),
+        should_modify_file=False,
+        notes="Ephemeral event with no durable belief - should be rejected entirely",
+    ),
+    WriteTestCase(
+        id="filter-mixed-ephemeral",
+        name="Mixed ephemeral and factual statement",
+        complexity=Complexity.MODERATE,
+        task_type=TaskType.CREATE,
+        fact_statement=(
+            "Last Tuesday my doctor told me that lack of sleep causes cognitive "
+            "decline and poor decision-making over time"
+        ),
+        expected=ExpectedStructure(
+            required_concepts=["Sleep"],
+            required_facets=[".deprivation", ".effects", ".cognition"],
+            required_operators=["=>"],
+            required_terms=["cognitive", "decision"],
+            forbidden_terms=["Tuesday", "doctor", "told me", "Last"],
+            min_claims=1,
+        ),
+        notes=(
+            "Contains ephemeral framing ('Last Tuesday my doctor told me') but also "
+            "a durable belief. Agent should extract only the belief about sleep."
+        ),
+    ),
+]
+
+# =============================================================================
 # ALL TEST CASES
 # =============================================================================
 
-ALL_WRITE_CASES = SIMPLE_CASES + MODERATE_CASES + COMPLEX_CASES
+ALL_WRITE_CASES = SIMPLE_CASES + MODERATE_CASES + COMPLEX_CASES + REJECTION_CASES
 
 
 def get_cases_by_complexity(complexity: Complexity) -> list[WriteTestCase]:
