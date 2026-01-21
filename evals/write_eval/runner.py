@@ -129,6 +129,7 @@ class WriteEvalRunner:
             # Build command with verbose flag
             cmd = [
                 self.agent_cli_path,
+                "add",
                 fact_statement,
                 "--file", temp_path,
                 "--model", model_id,
