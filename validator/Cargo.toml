@@ -9,11 +9,11 @@ license = "MIT"
 name = "worldview_validator"
 path = "src/lib.rs"
 
-[[bin]]
-name = "worldview-validate"
-path = "src/main.rs"
-
 [dependencies]
 thiserror = "1.0"
+
+[build-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
 
 [dev-dependencies]

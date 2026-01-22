@@ -45,3 +45,4 @@ results/
 
 # Generated files (created at compile-time)
 validator/src/tokens_generated.rs
+.codey/

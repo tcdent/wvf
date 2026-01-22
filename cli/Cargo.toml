@@ -1,8 +1,8 @@
 [package]
-name = "worldview-agent"
+name = "worldview-cli"
 version = "0.1.0"
 edition = "2024"
-description = "CLI tool for adding facts to Worldview files using an AI agent"
+description = "CLI tool for working with Worldview format files"
 license = "MIT"
 
 [[bin]]

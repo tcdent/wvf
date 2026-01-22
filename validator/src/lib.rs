@@ -4,6 +4,7 @@
 //! It checks structural correctness (hierarchy, indentation), claim syntax, brief forms,
 //! modifiers, and evolution markers.
 
+use std::collections::HashSet;
 use std::fmt;
 use thiserror::Error;
 
@@ -54,6 +55,9 @@ pub enum ValidationError {
     // Inline element errors
     #[error("line {line}: invalid reference format '{reference}' (expected &Concept.facet)")]
     InvalidReferenceFormat { line: usize, reference: String },
+
+    #[error("line {line}: undefined reference '{reference}' (no such concept.facet in document)")]
+    UndefinedReference { line: usize, reference: String },
 
     #[error("line {line}: empty condition (standalone '|')")]
     EmptyCondition { line: usize },
@@ -208,13 +212,16 @@ pub fn validate(input: &str) -> ValidationResult {
         });
     }
 
+    // Collect valid Concept.facet pairs for reference validation
+    let valid_refs = collect_valid_references(&lines);
+
     // Second pass: validate structure
     validate_structure(&lines, &mut errors);
 
     // Third pass: validate claim syntax including brief forms, modifiers, evolution
     for line in &lines {
         if let LineType::Claim(claim) = &line.line_type {
-            validate_claim_syntax(line.line_number, claim, &mut errors, &mut warnings);
+            validate_claim_syntax(line.line_number, claim, &valid_refs, &mut errors, &mut warnings);
         }
     }
 
@@ -619,10 +626,33 @@ fn validate_structure(lines: &[ParsedLine], errors: &mut Vec<ValidationError>) {
     }
 }
 
+/// Collect all valid Concept.facet reference targets from the document
+fn collect_valid_references(lines: &[ParsedLine]) -> HashSet<String> {
+    let mut valid_refs = HashSet::new();
+    let mut current_concept: Option<String> = None;
+
+    for line in lines {
+        match &line.line_type {
+            LineType::Concept(name) => {
+                current_concept = Some(name.clone());
+            }
+            LineType::Facet(name) => {
+                if let Some(ref concept) = current_concept {
+                    valid_refs.insert(format!("{}.{}", concept, name));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    valid_refs
+}
+
 /// Validate claim syntax including brief forms, modifiers, and evolution markers
 fn validate_claim_syntax(
     line_number: usize,
     claim: &ClaimData,
+    valid_refs: &HashSet<String>,
     errors: &mut Vec<ValidationError>,
     warnings: &mut Vec<ValidationError>,
 ) {
@@ -656,6 +686,16 @@ fn validate_claim_syntax(
     for reference in &claim.references {
         if !reference.is_empty() && !reference.contains('.') {
             errors.push(ValidationError::InvalidReferenceFormat {
+                line: line_number,
+                reference: reference.clone(),
+            });
+        }
+    }
+
+    // Validate references point to existing concept.facet pairs
+    for reference in &claim.references {
+        if !reference.is_empty() && reference.contains('.') && !valid_refs.contains(reference) {
+            errors.push(ValidationError::UndefinedReference {
                 line: line_number,
                 reference: reference.clone(),
             });
@@ -837,17 +877,24 @@ Trust
     #[test]
     fn test_claim_with_reference() {
         let input = r#"Trust
+  .formation
+    - slow
   .erosion
     - asymmetric vs formation &Trust.formation"#;
 
         let result = validate(input);
         assert!(result.is_valid(), "Expected valid: {:?}", result.errors);
 
-        if let Some(line) = result.lines.iter().find(|l| matches!(l.line_type, LineType::Claim(_))) {
-            if let LineType::Claim(claim) = &line.line_type {
-                assert!(claim.references.contains(&"Trust.formation".to_string()));
-            }
-        }
+        // Find the claim with the reference (second claim)
+        let claims: Vec<_> = result.lines.iter()
+            .filter_map(|l| match &l.line_type {
+                LineType::Claim(c) => Some(c),
+                _ => None,
+            })
+            .collect();
+        
+        assert!(claims.len() >= 2);
+        assert!(claims[1].references.contains(&"Trust.formation".to_string()));
     }
 
     #[test]
@@ -858,6 +905,30 @@ Trust
         let result = validate(input);
         assert!(!result.is_valid());
         assert!(result.errors.iter().any(|e| matches!(e, ValidationError::InvalidReferenceFormat { .. })));
+    }
+
+    #[test]
+    fn test_undefined_reference() {
+        let input = r#"Power
+  .core
+    - corrupts &Trust.formation"#;
+        let result = validate(input);
+        assert!(!result.is_valid());
+        assert!(result.errors.iter().any(|e| matches!(e, ValidationError::UndefinedReference { .. })));
+    }
+
+    #[test]
+    fn test_valid_cross_reference() {
+        // References between different concepts should work
+        let input = r#"Power
+  .institutional
+    - accountability <> trust &Trust.institutional
+
+Trust
+  .institutional
+    - possible | high transparency"#;
+        let result = validate(input);
+        assert!(result.is_valid(), "Expected valid: {:?}", result.errors);
     }
 
     // ==================== Brief form tests ====================

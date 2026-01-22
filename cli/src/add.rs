@@ -1,10 +1,6 @@
-//! Worldview Agent CLI - A tool for adding facts to Worldview files using an AI agent
-//!
-//! This CLI accepts plain-text facts and uses an AI agent to properly format
-//! and incorporate them into a Worldview format (.wvf) file.
+//! Add subcommand - adds facts to Worldview files using an AI agent
 
 use anyhow::Result;
-use clap::Parser;
 use codey::{Agent, AgentRuntimeConfig, AgentStep, RequestMode, SimpleTool, ToolRegistry};
 use serde_json::json;
 use std::path::PathBuf;
@@ -59,29 +55,6 @@ fn build_system_prompt() -> String {
         {}",
         SPEC, TASK_INSTRUCTIONS
     )
-}
-
-/// CLI for adding facts to Worldview files using an AI agent
-#[derive(Parser, Debug)]
-#[command(name = "worldview")]
-#[command(about = "Add facts to Worldview files using an AI agent")]
-#[command(version)]
-struct Cli {
-    /// The fact or statement to add to the Worldview file
-    #[arg(required = true)]
-    fact: String,
-
-    /// Path to the Worldview file to modify
-    #[arg(short, long, default_value = "worldview.wvf")]
-    file: PathBuf,
-
-    /// Model to use (claude-sonnet-4-20250514 or claude-opus-4-5-20251101)
-    #[arg(short, long, default_value = "claude-sonnet-4-20250514")]
-    model: String,
-
-    /// Enable verbose output
-    #[arg(short, long)]
-    verbose: bool,
 }
 
 /// Create the read_worldview tool definition
@@ -274,9 +247,7 @@ fn handle_tool_call(file_path: &PathBuf, tool_name: &str, params: &serde_json::V
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let cli = Cli::parse();
+pub async fn run(fact: String, file: PathBuf, model: String, verbose: bool) -> Result<()> {
     let start_time = std::time::Instant::now();
 
     // Check for API key
@@ -286,16 +257,16 @@ async fn main() -> Result<()> {
     }
 
     // Resolve the file path
-    let file_path = if cli.file.is_absolute() {
-        cli.file.clone()
+    let file_path = if file.is_absolute() {
+        file.clone()
     } else {
-        std::env::current_dir()?.join(&cli.file)
+        std::env::current_dir()?.join(&file)
     };
 
-    if cli.verbose {
+    if verbose {
         eprintln!("[config] Worldview file: {:?}", file_path);
-        eprintln!("[config] Model: {}", cli.model);
-        eprintln!("[config] Fact: {}", cli.fact);
+        eprintln!("[config] Model: {}", model);
+        eprintln!("[config] Fact: {}", fact);
         eprintln!("[start] Beginning agent execution...");
     }
 
@@ -306,7 +277,7 @@ async fn main() -> Result<()> {
 
     // Configure the agent
     let config = AgentRuntimeConfig {
-        model: cli.model.clone(),
+        model: model.clone(),
         max_tokens: 4096,
         thinking_budget: 1024,  // Minimum required
         max_retries: 3,
@@ -325,7 +296,7 @@ async fn main() -> Result<()> {
     // Format the user message
     let user_message = format!(
         "Please add this fact to the Worldview file at {:?}:\n\n{}",
-        file_path, cli.fact
+        file_path, fact
     );
 
     // Send the request
@@ -338,12 +309,12 @@ async fn main() -> Result<()> {
     while let Some(step) = agent.next().await {
         match step {
             AgentStep::TextDelta(text) => {
-                if cli.verbose {
+                if verbose {
                     print!("{}", text);
                 }
             }
             AgentStep::ThinkingDelta(thinking) => {
-                if cli.verbose {
+                if verbose {
                     if !thinking_started {
                         thinking_started = true;
                         eprint!("\n[thinking] ");
@@ -355,7 +326,7 @@ async fn main() -> Result<()> {
                 // Not used in our simple case
             }
             AgentStep::ToolRequest(tool_calls) => {
-                if cli.verbose && thinking_started {
+                if verbose && thinking_started {
                     eprintln!();  // End thinking block
                     thinking_started = false;
                 }
@@ -364,7 +335,7 @@ async fn main() -> Result<()> {
                     tool_call_count += 1;
                     let tool_start = std::time::Instant::now();
 
-                    if cli.verbose {
+                    if verbose {
                         // Format params nicely for readability
                         let params_str = if call.params.is_object() {
                             serde_json::to_string_pretty(&call.params).unwrap_or_else(|_| format!("{:?}", call.params))
@@ -377,7 +348,7 @@ async fn main() -> Result<()> {
 
                     let result = handle_tool_call(&file_path, &call.name, &call.params);
 
-                    if cli.verbose {
+                    if verbose {
                         let tool_elapsed = tool_start.elapsed();
                         eprintln!("[result:{}ms] {}", tool_elapsed.as_millis(), result);
                     }
@@ -386,13 +357,13 @@ async fn main() -> Result<()> {
                 }
             }
             AgentStep::Retrying { attempt, error } => {
-                if cli.verbose {
+                if verbose {
                     eprintln!("[retry] Attempt {} after error: {}", attempt, error);
                 }
             }
             AgentStep::Finished { usage } => {
                 let total_elapsed = start_time.elapsed();
-                if cli.verbose {
+                if verbose {
                     eprintln!("\n[done] Output: {}, Context: {}",
                         usage.output_tokens, usage.context_tokens);
                     eprintln!("[timing] Total: {}ms, Tool calls: {}",
@@ -402,7 +373,7 @@ async fn main() -> Result<()> {
             }
             AgentStep::Error(e) => {
                 let total_elapsed = start_time.elapsed();
-                if cli.verbose {
+                if verbose {
                     eprintln!("[error:{}ms] {}", total_elapsed.as_millis(), e);
                 }
                 eprintln!("Error: {}", e);

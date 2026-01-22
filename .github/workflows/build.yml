@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'agent/**'
+      - 'cli/**'
       - 'validator/**'
       - 'spec/**'
       - 'evals/**'
@@ -15,7 +15,7 @@ on:
   pull_request:
     branches: [main, master]
     paths:
-      - 'agent/**'
+      - 'cli/**'
       - 'validator/**'
       - 'spec/**'
       - 'evals/**'
@@ -37,21 +37,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install PyYAML
-        run: pip install pyyaml
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Regenerate all spec-derived files
-        run: |
-          # Generate system.md, README language spec, etc.
-          python spec/generate.py all
-
-          # Note: validator tokens are generated at compile-time via build.rs
-          # so we don't need tokens_generated.rs committed anymore
+        run: uv run spec/generate.py all
 
       - name: Check for uncommitted changes
         run: |
@@ -91,27 +81,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Build validator
-        run: |
-          cd validator
-          cargo build --release
+      - name: Build validator library
+        run: cd validator && cargo build --release
 
-      - name: Build agent
+      - name: Build CLI
         run: |
-          cd agent
+          cd cli
           ./setup.sh
           cargo build --release
 
       - name: Run validator tests
-        run: |
-          cd validator
-          cargo test
+        run: cd validator && cargo test
 
       - name: Collect binaries
         run: |
           mkdir -p dist
-          cp validator/target/release/worldview-validate dist/
-          cp agent/target/release/worldview dist/
+          cp cli/target/release/worldview dist/
           chmod +x dist/*
 
       - name: Upload artifacts

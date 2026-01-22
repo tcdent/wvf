@@ -105,35 +105,32 @@ Claims follow positional grammar—position implies role:
 
 This repository includes a complete toolchain for working with Worldview documents:
 
-### Validator (`worldview-validate`)
+### CLI (`worldview`)
 
-Validates `.wvf` files for syntactic correctness.
+A unified command-line tool for working with Worldview files.
 
 ```bash
 # Validate a file
-worldview-validate example.wvf
+worldview validate example.wvf
 
 # Validate from stdin
-cat example.wvf | worldview-validate --stdin
-```
+cat example.wvf | worldview validate --stdin
 
-### Agent CLI (`worldview`)
-
-An AI-powered tool that converts plain-text statements into proper Worldview notation.
-
-```bash
-# Add a fact to a Worldview file
-worldview "Trust is built slowly through consistent actions" --file worldview.wvf
+# Add a fact using AI agent
+worldview add "Trust is built slowly through consistent actions" --file worldview.wvf
 
 # Use a specific model
-worldview "Power corrupts when unchecked" --model claude-opus-4-5-20251101
+worldview add "Power corrupts when unchecked" --model claude-opus-4-5-20251101
+
+# View format specification
+worldview --help
 ```
 
-The agent understands the full Worldview specification and will:
-1. Read existing content to understand structure
-2. Determine appropriate concept/facet placement
-3. Format statements using proper notation
-4. Validate before writing
+The `add` command uses an AI agent that:
+1. Reads existing content to understand structure
+2. Determines appropriate concept/facet placement
+3. Formats statements using proper notation
+4. Validates before writing (validation runs automatically)
 
 ### Evaluation Framework
 
@@ -141,17 +138,17 @@ A Python framework for testing how well LLMs can leverage Worldview-encoded beli
 
 ```bash
 # Install dependencies
-pip install -r evals/requirements.txt
+uv sync
 
 # Run evaluations
-python -m evals run --models claude-sonnet gpt-5.2
+uv run python -m evals run --models claude-sonnet gpt-5.2
 
 # Run specific difficulty
-python -m evals run --difficulty extreme
+uv run python -m evals run --difficulty extreme
 
 # List available models and test cases
-python -m evals list-models
-python -m evals list-cases
+uv run python -m evals list-models
+uv run python -m evals list-cases
 ```
 
 ## Project Structure
@@ -162,18 +159,17 @@ wvf/
 │   ├── tokens.yaml          # Token definitions (source of truth)
 │   ├── grammar.pest         # PEG grammar
 │   └── generate.py          # Generates docs and code from tokens.yaml
-├── validator/               # Rust validator
-│   ├── src/lib.rs           # Validation library
-│   ├── src/main.rs          # CLI tool
+├── validator/               # Rust validation library
+│   ├── src/lib.rs           # Validation logic
 │   └── build.rs             # Generates tokens from spec at compile time
-├── agent/                   # Rust agent CLI
-│   └── src/main.rs          # LLM-powered notation converter
+├── cli/                     # Rust CLI (unified binary)
+│   ├── src/main.rs          # Subcommand dispatch
+│   ├── src/validate.rs      # Validate subcommand
+│   └── src/add.rs           # Add subcommand (AI agent)
 ├── evals/                   # Python evaluation framework
 │   ├── cli.py               # Evaluation CLI
-│   ├── runner.py            # Test orchestration
-│   ├── evaluator.py         # Response scoring
-│   ├── test_cases.py        # Test case definitions
-│   └── llm_clients.py       # LLM provider clients
+│   ├── read_eval/           # Read comprehension tests
+│   └── write_eval/          # Write/generation tests
 ├── SPEC.md                  # Full format specification
 ├── system.md                # Condensed system prompt (generated)
 └── example.wvf              # Example document
@@ -184,16 +180,23 @@ wvf/
 ### Prerequisites
 
 - Rust 1.70+
-- Python 3.11+
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/)
 
-### Build Tools
+### Build CLI
 
 ```bash
-# Build validator
-cd validator && cargo build --release
+# Setup vendored dependencies and build
+cd cli && ./setup.sh && cargo build --release
 
-# Build agent (requires setup for vendored dependencies)
-cd agent && ./setup.sh && cargo build --release
+# Binary will be at cli/target/release/worldview
+```
+
+### Run Evaluations
+
+```bash
+# From project root
+uv sync
+uv run python -m evals --help
 ```
 
 ## Design Principles
