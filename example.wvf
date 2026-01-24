@@ -5,7 +5,7 @@ Power
     - concentration^ => abuse^ @historical-pattern
   .institutional
     - self-preserving
-    - accountability <> trust &Trust.institutional
+    - mutual accountability with trust &Trust.institutional
     - diffusion => dilution-of-responsibility
 
 Trust
@@ -46,7 +46,7 @@ Institutions
     - coordinate action @game-theory
   .dysfunction
     - ossify | over time
-    - self-perpetuate // original purpose
+    - self-perpetuates despite original purpose
     - capture-by-interests^ @public-choice-theory
 
 Python-development

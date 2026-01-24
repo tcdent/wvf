@@ -1,12 +1,14 @@
 # Worldview
 
-A compact notation format for encoding and maintaining conceptual worldviews over time, designed for LLM context persistence.
+A constrained notation format for encoding conceptual worldviews, where the structure itself enforces what can and cannot be stored.
 
 ## Overview
 
-The **Worldview format** (file extension: `.wvf`) is a declarative notation for storing beliefs, stances, and understanding about concepts. Unlike retrieval-augmented generation (RAG) which selectively includes information, Worldview documents are designed to remain *entirely in context* across all LLM interactions.
+The **Worldview format** (file extension: `.wvf`) is a declarative notation for storing beliefs, stances, and understanding about concepts. Its primary value is structural constraint—the rigid hierarchy of Concepts, Facets, and Claims makes it impossible to encode inappropriate content types.
 
-This solves a fundamental problem: LLMs have foundational beliefs and stances that should inform all reasoning, not just topically-matched queries. The Worldview format is dense enough that an entire belief system can remain in context permanently.
+This solves a fundamental problem: when beliefs are stored in unstructured formats like Markdown, documents grow with repetitious statements, narrative tangents, and content that strays from the intended purpose. The Worldview format prevents this by requiring that every piece of information fit into a strict hierarchy—if something doesn't fit the structure, it doesn't belong.
+
+Token efficiency is a consequence, not the goal: when you can only store structured beliefs, documents stay focused and compact.
 
 ## Quick Start
 
@@ -58,18 +60,14 @@ Concept           (unindented, bare text)
 
 ### Brief Forms
 
-Compact operators for common relationships:
+Minimal operators for common relationships (less common relationships use natural language):
 
 | Symbol | Meaning | Example |
 |--------|---------|---------|
 | `=>` | causes, leads to | `power => corruption` |
-| `<=` | caused by, results from | `trust <= consistency` |
-| `<>` | mutual, bidirectional | `accountability <> trust` |
-| `><` | tension, conflicts with | `efficiency >< thoroughness` |
 | `~` | similar to, resembles | `authority ~ influence` |
 | `=` | equivalent to, means | `formal = official` |
-| `vs` | in contrast to | `asymmetric vs formation` |
-| `//` | regardless of | `self-perpetuate // original purpose` |
+| `vs` | contrasts with, in tension with | `efficiency vs thoroughness` |
 
 ### Modifiers
 
@@ -203,21 +201,37 @@ uv run python -m evals --help
 
 The Worldview format follows five core principles:
 
-1. **State over narrative**: Capture what is believed, not how it came to be believed
-2. **Predictability allows omission**: If structure makes something inferable, don't write it
+1. **Structure as enforcement**: The rigid hierarchy prevents inappropriate content—if it doesn't fit, it doesn't belong
+2. **State over narrative**: Capture what is believed, not how it came to be believed
 3. **Conflict tolerance**: Real worldviews contain tensions—hold them without forcing resolution
-4. **Freeform vocabulary**: Structure is defined; content remains unconstrained
-5. **LLM-native, human-inspectable**: Optimized for machine parsing while remaining readable
+4. **Minimal notation**: Only universally intuitive symbols; natural language for uncommon relationships
+5. **Freeform vocabulary**: Structure is defined; content remains unconstrained
+
+## LLM-Native Tokens
+
+The notation uses symbols that LLMs already understand intuitively—tokens whose semantics are well-established in training data:
+
+- `?` for uncertainty — LLMs reliably interpret `?` as questioning or tentative
+- `!` for emphasis — strongly associated with assertion and importance
+- `=>` for causation — arrow notation for "leads to" is universal
+- `~` for similarity — mathematical approximation notation
+- `@` for attribution — familiar from email and social media
+- `&` for reference — established linking/joining semantics
+
+This isn't arbitrary shorthand—it's leveraging semantic associations that already exist in model weights. When an LLM sees `collapse?`, it understands uncertainty without needing explicit instruction.
+
+Symbols that *don't* have clear pre-existing semantics (like `><` for tension or `//` for "regardless") are avoided. If a relationship requires explanation to understand, natural language is clearer than a novel symbol.
 
 ## Why "Worldview"?
 
 The name emphasizes the core use case: encoding *how concepts are understood* rather than just storing facts. This is different from:
 
+- **Markdown files**: No structural constraints; content drifts and duplicates
 - **Knowledge bases**: Store facts, not interpretations
 - **RAG systems**: Retrieve relevant content per query
 - **Memory systems**: Log events chronologically
 
-Worldview documents capture the *lens* through which all subsequent reasoning should be filtered.
+Worldview documents capture the *lens* through which all subsequent reasoning should be filtered—and the format's constraints ensure documents stay focused on that purpose.
 
 ## File Extension
 
