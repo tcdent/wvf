@@ -71,16 +71,13 @@ reference_target = @{ identifier ~ "." ~ identifier }
 
 /// Brief form: compact relationship notation
 /// Two operands connected by an operator
+/// Only universally intuitive operators are supported; use natural language for others
 brief_form = { operand ~ " "? ~ operator ~ " "? ~ operand }
 
-/// Brief form operators (ordered by length for proper matching)
+/// Brief form operators (minimal set, ordered by length for proper matching)
 operator = @{
     "=>" |   // causes, leads to
-    "<=" |   // caused by, results from (NOTE: not inside [...])
-    "<>" |   // mutual, bidirectional
-    "><" |   // tension, conflicts with
-    "//" |   // regardless of
-    "vs" |   // in contrast to
+    "vs" |   // contrasts with, in tension with
     "~"  |   // similar to, resembles
     "="      // equivalent to, means
 }

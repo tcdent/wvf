@@ -20,13 +20,9 @@ Every concept has facets. Every facet has claims. Claims may include conditions,
 | `@` | source (basis for belief) | `@historical-pattern` |
 | `&` | reference (links to other concept.facet) | `&Trust.formation` |
 | `=>` | causes, leads to | `power => corruption` |
-| `<=` | caused by, results from | `trust <= consistency` |
-| `<>` | mutual, bidirectional | `accountability <> trust` |
-| `><` | tension, conflicts with | `efficiency >< thoroughness` |
 | `~` | similar to, resembles | `authority ~ influence` |
 | `=` | equivalent to, means | `formal = official` |
-| `vs` | in contrast to | `asymmetric vs formation` |
-| `//` | regardless of | `self-perpetuate // original purpose` |
+| `vs` | contrasts with, in tension with | `efficiency vs thoroughness` |
 | `^` | increasing, trending up | `concentration^` |
 | `v` | decreasing, trending down | `trust v` |
 | `!` | strong, emphatic, high confidence | `fast !` |

@@ -6,62 +6,83 @@
 
 ## Abstract
 
-The Worldview format is a compact, declarative notation for encoding and maintaining conceptual worldviews over time. It provides a structured format for storing beliefs, stances, and understanding about concepts—designed to be included in full within every interaction context rather than retrieved selectively.
+The Worldview format is a constrained notation for encoding conceptual worldviews. Its primary purpose is to provide a rigid structure that enforces what can and cannot be stored—the syntax itself prevents drift into inappropriate content types.
 
-The Worldview format is not a general-purpose communication language. It is a specialized format for preserving *how concepts are understood*, optimized for semantic density without sacrificing clarity. The notation is intended to be intuitive for large language models to parse, reason about, and autonomously maintain, while remaining human-inspectable. Beliefs are stored as structured claims with conditions and sources, enabling an LLM to hold persistent context about a user, domain, or system across extended interactions.
+The format is not optimized for token efficiency as a primary goal; density is a *consequence* of the constraints. By requiring that all content fit into a strict hierarchy of Concepts, Facets, and Claims, the format naturally excludes narratives, logs, predictions, and other content that doesn't belong in a worldview document.
 
 ---
 
 ## Motivation
 
-Large language models operate within fixed context windows. Existing approaches to persistent memory—such as retrieval-augmented generation (RAG)—selectively include information based on relevance to the current query. This works for factual lookup but fails for *worldview*: the foundational beliefs and stances that should inform all reasoning, not just topically-matched queries.
+The problem Worldview solves is not context length—it's content discipline.
 
-The Worldview format solves this by defining a notation dense enough that an entire belief system (potentially tens of thousands of tokens) can remain in context permanently. Rather than retrieving relevant memories, the LLM carries its complete understanding forward into every interaction.
+When beliefs and stances are stored in unstructured formats like Markdown, documents tend to grow with repetitious statements, narrative tangents, and content that strays from the intended purpose. There is no enforcement of what belongs versus what doesn't.
 
-The format prioritizes:
-- **Semantic density** — Strip prose, keep meaning
-- **Structural consistency** — Predictable hierarchy for reliable parsing
-- **Evolutionary tracking** — Beliefs change; the notation accommodates revision
-- **Autonomous maintenance** — The LLM updates the document without user intervention
+The Worldview format solves this through structural constraint:
+
+1. **Every piece of information has a designated place** — Concepts organize by subject, Facets organize by aspect, Claims make assertions. If something doesn't fit this hierarchy, it doesn't belong.
+
+2. **The syntax prevents duplication** — Because content is categorized into a clear hierarchy, there's always one canonical location for any given belief. Adding a duplicate requires navigating to the same place, making redundancy obvious.
+
+3. **Inappropriate content is structurally excluded** — Predictions, evaluations, event logs, and narratives cannot be encoded in the Concept → Facet → Claim structure. The format only accepts statements of understanding.
+
+Token efficiency is a side effect: when you can only store structured beliefs, documents stay focused and compact.
 
 ---
 
 ## Design Principles
 
-**State over narrative**
-The Worldview format captures what is believed, not the story of how it came to be believed. History is preserved compactly when relevant, but the primary representation is current state.
+**Structure as enforcement**
+The rigid hierarchy of Concept → Facet → Claim is the primary mechanism for keeping documents focused. If content doesn't fit this structure, it doesn't belong.
 
-**Predictability allows omission**
-Borrowed from stenographic shorthand: if structure or context makes something inferable, don't write it. No articles, no copulas, no filler.
+**State over narrative**
+The format captures what is believed, not the story of how it came to be believed. History is preserved compactly when relevant, but the primary representation is current state.
 
 **Conflict tolerance**
-Real worldviews contain tensions and contradictions. The Worldview format holds conflicting claims without forcing resolution.
+Real worldviews contain tensions and contradictions. The format holds conflicting claims without forcing resolution.
+
+**Minimal notation**
+Symbols are used sparingly—only where they are universally intuitive (`=>`, `~`, `=`, `vs`). Less common relationships use natural language within claims.
 
 **Freeform vocabulary**
-No predefined concept names, facet labels, or claim terms. The notation defines structure and relationships; content remains unconstrained.
-
-**LLM-native, human-inspectable**
-Optimized for machine parsing and reasoning. Human readability is a secondary benefit, not a design constraint.
+No predefined concept names, facet labels, or claim terms. The notation defines structure; content remains unconstrained.
 
 ---
 
 ## Inspirations
 
-### Stenographic Shorthand
-Systems like Gregg, Pitman, and Teeline informed the Worldview format's approach to density:
-- **Omission of predictable elements** — Common words and inferable structure are dropped
-- **Brief forms** — High-frequency relationships get compact symbols
-- **Positional grammar** — Location within a line implies role
-- **Affix modification** — Small markers inflect meaning
-
 ### Belief Representation
-The Worldview format draws on concepts from epistemology and knowledge representation:
+The format draws on concepts from epistemology and knowledge representation:
 - Beliefs as claims with conditions (contextualism)
 - Sources as grounding for confidence (evidentialism)
 - Tolerance of contradiction (paraconsistent approaches)
 
 ### Configuration Languages
 The hierarchical structure echoes YAML and similar formats, using indentation for nesting while avoiding syntactic overhead like quotes and brackets.
+
+### Constraint-Based Design
+The format takes inspiration from systems where limitations enhance focus: structured data schemas, controlled vocabularies, and formats where the inability to express certain things is a feature rather than a limitation.
+
+---
+
+## LLM-Native Tokens
+
+The notation deliberately uses symbols that LLMs already understand intuitively—tokens whose semantics are well-established in training data:
+
+| Symbol | Why It Works |
+|--------|--------------|
+| `?` | Universally associated with uncertainty and questioning |
+| `!` | Strongly associated with emphasis and assertion |
+| `=>` | Arrow notation for causation is universal across programming and logic |
+| `~` | Mathematical approximation; resemblance |
+| `@` | Attribution and source reference (email, social media, programming) |
+| `&` | Joining and linking semantics |
+| `^` | Upward direction/increase (caret, superscript) |
+| `v` | Downward direction/decrease (shaped like down arrow) |
+
+This approach leverages semantic associations that already exist in model weights. When an LLM sees `collapse?`, it understands uncertainty without explicit instruction.
+
+Critically, symbols that lack clear pre-existing semantics are avoided. If a relationship requires explanation to understand, natural language is clearer than a novel symbol. This is why the format uses only four brief form operators (`=>`, `~`, `=`, `vs`) rather than a larger set that would require learning new meanings.
 
 ---
 
@@ -134,26 +155,24 @@ Position implies role—no labels needed:
 
 ## Brief Forms
 
-Common relationships use compact symbols:
+A minimal set of universally intuitive symbols for common relationships:
 
 | Symbol | Meaning |
 |--------|---------|
 | `=>` | causes, leads to |
-| `<=` | caused by, results from |
-| `<>` | mutual, bidirectional |
-| `><` | tension, conflicts with |
 | `~` | similar to, resembles |
 | `=` | equivalent to, means |
-| `vs` | in contrast to |
-| `//` | regardless of |
+| `vs` | contrasts with, in tension with |
+
+Less common relationships should use natural language within claims rather than forcing additional symbols.
 
 ### Examples
 
 ```
 - power => corruption | unchecked
-- trust <= consistency | over time
-- efficiency >< thoroughness
 - formal-authority ~ informal-influence
+- efficiency vs thoroughness
+- mutual accountability with trust
 ```
 
 ---
@@ -242,7 +261,7 @@ Power
     - concentration^ => abuse^ @historical-pattern
   .institutional
     - self-preserving
-    - accountability <> trust &Trust.institutional
+    - mutual accountability with trust &Trust.institutional
     - diffusion => dilution-of-responsibility
 
 Trust
@@ -282,7 +301,7 @@ Institutions
     - coordinate action @game-theory
   .dysfunction
     - ossify | over time
-    - self-perpetuate // original purpose
+    - self-perpetuates despite original purpose
     - capture-by-interests^ @public-choice-theory
 ```
 
@@ -290,13 +309,14 @@ Institutions
 
 ## Non-Goals
 
-The Worldview format explicitly does not attempt to:
+The format explicitly does not attempt to:
 
 - **Prove logical consistency** — Contradictions are permitted
 - **Enforce ontology** — No required categories or hierarchies beyond structure
-- **Replace natural language** — The Worldview format is for belief state, not communication
+- **Replace natural language** — The format is for belief state, not communication
 - **Assert objective truth** — Claims represent understanding, not facts
 - **Store predictions, evaluations, or identity** — These are derived from beliefs, not stored directly
+- **Maximize symbol density** — Notation is minimal; natural language is preferred for uncommon relationships
 
 ---
 
@@ -312,7 +332,7 @@ The Worldview format explicitly does not attempt to:
 
 ## Summary
 
-The Worldview format is a notation for meaning, not conversation. It exists to preserve how concepts are understood—compactly enough to remain always in context, structured enough to reason about reliably, and flexible enough to evolve as understanding changes.
+The Worldview format is a constrained notation for meaning, not conversation. Its rigid structure enforces that only appropriate content is stored—the syntax itself prevents documents from drifting into narratives, logs, or other inappropriate content types.
 
 The format encodes:
 - **What** is believed (claims)
@@ -321,10 +341,10 @@ The format encodes:
 - **How** beliefs connect (references)
 - **That** beliefs change (evolution markers)
 
-It deliberately omits:
-- Prose and filler
-- Explicit confidence scores (derived from conditions and sources)
-- Detailed history (supersession markers suffice)
-- Evaluative or predictive statements (derived at runtime)
+It structurally excludes:
+- Narratives and prose
+- Event logs and timelines
+- Predictions and evaluations
+- Duplicate information (hierarchy makes canonical location obvious)
 
-The Worldview format is designed to be carried forward—a persistent lens through which all subsequent reasoning is filtered.
+The format's value is constraint: by limiting what can be expressed, it keeps documents focused on their intended purpose—a persistent lens through which all subsequent reasoning is filtered.

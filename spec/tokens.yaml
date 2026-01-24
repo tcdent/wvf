@@ -47,22 +47,12 @@ inline_elements:
     example: "&Trust.formation"
 
 # Brief forms - compact relationship operators
+# Intentionally minimal: only the most universally intuitive symbols are included.
+# Less common relationships should use natural language within claims.
 brief_forms:
   - symbol: "=>"
     meaning: "causes, leads to"
     example: "power => corruption"
-
-  - symbol: "<="
-    meaning: "caused by, results from"
-    example: "trust <= consistency"
-
-  - symbol: "<>"
-    meaning: "mutual, bidirectional"
-    example: "accountability <> trust"
-
-  - symbol: "><"
-    meaning: "tension, conflicts with"
-    example: "efficiency >< thoroughness"
 
   - symbol: "~"
     meaning: "similar to, resembles"
@@ -73,12 +63,8 @@ brief_forms:
     example: "formal = official"
 
   - symbol: "vs"
-    meaning: "in contrast to"
-    example: "asymmetric vs formation"
-
-  - symbol: "//"
-    meaning: "regardless of"
-    example: "self-perpetuate // original purpose"
+    meaning: "contrasts with, in tension with"
+    example: "efficiency vs thoroughness"
 
 # Modifiers - suffix markers that inflect meaning
 modifiers:

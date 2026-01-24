@@ -424,26 +424,22 @@ fn extract_brief_forms(text: &str) -> Vec<BriefFormUsage> {
 
     // Check for each brief form operator
     // Order matters: check longer operators first to avoid partial matches
-    let operators_by_length: &[&str] = &["=>", "<=", "<>", "><", "//", "vs", "~", "="];
+    // Minimal set: =>, vs, ~, =
+    let operators_by_length: &[&str] = &["=>", "vs", "~", "="];
 
     let remaining = text.to_string();
 
     for &op in operators_by_length {
-        // Skip <= if it's part of [<= (evolution marker)
-        if op == "<=" && remaining.contains("[<=") {
-            continue;
-        }
-
-        // Special handling for = to avoid matching => or <=
+        // Special handling for = to avoid matching =>
         if op == "=" {
-            // Look for standalone = not part of => or <=
+            // Look for standalone = not part of =>
             let mut i = 0;
             let chars: Vec<char> = remaining.chars().collect();
             while i < chars.len() {
                 if chars[i] == '=' {
                     let prev = if i > 0 { Some(chars[i - 1]) } else { None };
                     let next = chars.get(i + 1);
-                    // Check it's not part of =>, <=, or <>
+                    // Check it's not part of =>
                     if prev != Some('<') && prev != Some('>') && next != Some(&'>') {
                         // Found standalone =
                         let before: String = chars[..i].iter().collect();
@@ -954,57 +950,6 @@ Trust
     }
 
     #[test]
-    fn test_brief_form_caused_by() {
-        let input = r#"Trust
-  .formation
-    - trust <= consistency"#;
-
-        let result = validate(input);
-        assert!(result.is_valid(), "Expected valid: {:?}", result.errors);
-
-        if let Some(line) = result.lines.iter().find(|l| matches!(l.line_type, LineType::Claim(_))) {
-            if let LineType::Claim(claim) = &line.line_type {
-                let bf = claim.brief_forms.iter().find(|b| b.operator == "<=");
-                assert!(bf.is_some(), "Expected <= operator");
-            }
-        }
-    }
-
-    #[test]
-    fn test_brief_form_mutual() {
-        let input = r#"Trust
-  .institutional
-    - accountability <> trust"#;
-
-        let result = validate(input);
-        assert!(result.is_valid(), "Expected valid: {:?}", result.errors);
-
-        if let Some(line) = result.lines.iter().find(|l| matches!(l.line_type, LineType::Claim(_))) {
-            if let LineType::Claim(claim) = &line.line_type {
-                let bf = claim.brief_forms.iter().find(|b| b.operator == "<>");
-                assert!(bf.is_some(), "Expected <> operator");
-            }
-        }
-    }
-
-    #[test]
-    fn test_brief_form_tension() {
-        let input = r#"Work
-  .balance
-    - efficiency >< thoroughness"#;
-
-        let result = validate(input);
-        assert!(result.is_valid(), "Expected valid: {:?}", result.errors);
-
-        if let Some(line) = result.lines.iter().find(|l| matches!(l.line_type, LineType::Claim(_))) {
-            if let LineType::Claim(claim) = &line.line_type {
-                let bf = claim.brief_forms.iter().find(|b| b.operator == "><");
-                assert!(bf.is_some(), "Expected >< operator");
-            }
-        }
-    }
-
-    #[test]
     fn test_brief_form_similar() {
         let input = r#"Authority
   .types
@@ -1034,23 +979,6 @@ Trust
             if let LineType::Claim(claim) = &line.line_type {
                 let bf = claim.brief_forms.iter().find(|b| b.operator == "vs");
                 assert!(bf.is_some(), "Expected vs operator");
-            }
-        }
-    }
-
-    #[test]
-    fn test_brief_form_regardless() {
-        let input = r#"Institutions
-  .dysfunction
-    - self-perpetuate // original purpose"#;
-
-        let result = validate(input);
-        assert!(result.is_valid(), "Expected valid: {:?}", result.errors);
-
-        if let Some(line) = result.lines.iter().find(|l| matches!(l.line_type, LineType::Claim(_))) {
-            if let LineType::Claim(claim) = &line.line_type {
-                let bf = claim.brief_forms.iter().find(|b| b.operator == "//");
-                assert!(bf.is_some(), "Expected // operator");
             }
         }
     }
@@ -1262,7 +1190,7 @@ Trust
     - concentration^ => abuse^ @historical-pattern
   .institutional
     - self-preserving
-    - accountability <> trust &Trust.institutional
+    - mutual accountability with trust &Trust.institutional
     - diffusion => dilution-of-responsibility
 
 Trust
@@ -1302,7 +1230,7 @@ Institutions
     - coordinate action @game-theory
   .dysfunction
     - ossify | over time
-    - self-perpetuate // original purpose
+    - self-perpetuates despite original purpose
     - capture-by-interests^ @public-choice-theory"#;
 
         let result = validate(input);

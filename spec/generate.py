@@ -74,7 +74,7 @@ def generate_language_spec(tokens: dict) -> str:
 
     # Brief forms
     output.append("### Brief Forms\n")
-    output.append("Compact operators for common relationships:\n")
+    output.append("Minimal operators for common relationships (less common relationships use natural language):\n")
     output.append("| Symbol | Meaning | Example |")
     output.append("|--------|---------|---------|")
     for bf in tokens["brief_forms"]:
@@ -346,7 +346,7 @@ def generate_markdown_tables(tokens: dict) -> str:
 
     # Brief forms table
     output.append("## Brief Forms\n")
-    output.append("Common relationships use compact symbols:\n")
+    output.append("Minimal operators for common relationships (less common relationships use natural language):\n")
     output.append("| Symbol | Meaning | Example |")
     output.append("|--------|---------|---------|")
     for bf in tokens["brief_forms"]:
